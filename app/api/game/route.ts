@@ -1,2 +1,0 @@
-import {execute} from '../../../lib/game-service';
-export async function POST(req:Request){const user=req.headers.get('oai-authenticated-user-id');if(!user)return Response.json({error:'Inicia sesión para acceder a tus partidas.'},{status:401});try{const body:any=await req.json();return Response.json(await execute(user,body.action,body),{headers:{'Cache-Control':'no-store'}});}catch(e){return Response.json({error:e instanceof Error?e.message:'No se pudo completar la operación'},{status:400});}}

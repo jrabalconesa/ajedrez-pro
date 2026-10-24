@@ -1,5 +1,0 @@
-interface:
-  display_name: Analizar la apertura
-  short_description: Reconoce la apertura y aprende los planes de ambos
-  default_prompt: Usa $opening-debrief. Explícame la apertura y los planes para ambos
-    bandos.

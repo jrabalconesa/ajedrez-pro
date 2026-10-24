@@ -1,4 +1,0 @@
-interface:
-  display_name: Exportar la partida a PGN
-  short_description: Copia la partida en un formato PGN fiel al historial
-  default_prompt: Usa $export-chess-game. Exporta esta partida a PGN.

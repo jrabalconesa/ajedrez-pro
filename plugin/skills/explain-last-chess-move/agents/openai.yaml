@@ -1,5 +1,0 @@
-interface:
-  display_name: Explicar la última jugada
-  short_description: Entiende la idea y las amenazas de la última jugada
-  default_prompt: Usa $explain-last-chess-move. Explícame la última jugada y qué debo
-    vigilar.

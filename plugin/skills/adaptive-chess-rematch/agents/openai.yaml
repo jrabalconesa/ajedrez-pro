@@ -1,5 +1,0 @@
-interface:
-  display_name: Revancha con dificultad adaptada
-  short_description: Ajusta el nivel y empieza una nueva partida
-  default_prompt: Usa $adaptive-chess-rematch. Quiero jugar de nuevo con una dificultad
-    adecuada.
