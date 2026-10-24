@@ -1,0 +1,4 @@
+interface:
+  display_name: Explicar el resultado
+  short_description: Comprende por qué ha terminado la partida
+  default_prompt: Usa $explain-chess-result. Explícame por qué ha terminado esta partida.

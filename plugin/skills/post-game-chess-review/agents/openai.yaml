@@ -1,0 +1,5 @@
+interface:
+  display_name: Revisar la partida
+  short_description: Identifica momentos clave y prioridades de mejora
+  default_prompt: Usa $post-game-chess-review. Revisa mi partida y dame tres prioridades
+    de mejora.

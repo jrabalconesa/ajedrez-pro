@@ -1,0 +1,19 @@
+{
+  "apps": "./.app.json",
+  "author": {
+    "name": "App developer"
+  },
+  "description": "Ajedrez PRO: tablero y entrenador propios con Stockfish 19, variantes y partidas guardadas.",
+  "interface": {
+    "capabilities": [],
+    "category": "Other",
+    "defaultPrompt": null,
+    "developerName": "App developer",
+    "displayName": "Ajedrez PRO - Aprende, juega y mejora",
+    "longDescription": "Plugin propio con tablero interactivo, entrenador, Stockfish 19, variantes y partidas guardadas.",
+    "shortDescription": "Tablero y entrenador propios con Stockfish 19.",
+    "websiteURL": "https://ajedrez-pro.joserabalconesa.chatgpt.site"
+  },
+  "name": "dev-5af5ac0f4e60819192e3958f3c272311",
+  "version": "1.4.0"
+}

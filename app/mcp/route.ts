@@ -1,0 +1,35 @@
+import {execute} from '../../lib/game-service';
+import {widgetHtml} from '../../lib/generated/widget-html';
+const uri='ui://ajedrez-jose/board';
+const properties={id:{type:'string'},revision:{type:'integer',minimum:0}};
+const defs:any[]=[
+ ['get_game','Ver tablero','Lee la partida activa y abre el tablero propio de Ajedrez PRO. Stockfish 19 se ejecuta localmente cuando el tablero está abierto.','get',{},[],true],
+ ['list_games','Mis partidas','Lista las partidas y variantes guardadas del usuario.','list',{},[],true],
+ ['start_game','Nueva partida','Crea una partida contra Stockfish. El usuario juega blancas; la respuesta automática de negras se calcula al abrir el tablero.','new',{difficulty:{type:'integer',minimum:0,maximum:20,default:6},fen:{type:'string'},title:{type:'string',maxLength:100}},[],false],
+ ['play_move','Jugar una jugada','Acepta SAN inglesa o española, coordenadas UCI e instrucciones españolas inequívocas (por ejemplo enroque corto, caballo a f3). Pide precisión si es ambigua. También acepta un objeto con from/to/promotion. continueWithEngine reactiva la respuesta negra aunque la posición proceda del modo estudio. No inventes que Stockfish ya ha respondido.','move',{move:{oneOf:[{type:'string'},{type:'object',properties:{from:{type:'string'},to:{type:'string'},promotion:{type:'string',enum:['q','r','b','n']}},required:['from','to'],additionalProperties:false}]},continueWithEngine:{type:'boolean'}},['move'],false],
+ ['change_move','Cambiar una jugada','Desde una posición anterior crea automáticamente una variante, conserva la partida original y realiza la nueva jugada. Puede continuar contra Stockfish cuando juegan blancas.','branch_move',{move:{oneOf:[{type:'string'},{type:'object',properties:{from:{type:'string'},to:{type:'string'},promotion:{type:'string',enum:['q','r','b','n']}},required:['from','to'],additionalProperties:false}]},continueWithEngine:{type:'boolean'}},['move'],false],
+ ['seek_position','Volver a una posición','Sitúa el tablero en una media jugada del historial, empezando por 0. Cambia a estudio y conserva el historial.','seek',{cursor:{type:'integer',minimum:0}},['cursor'],false],
+ ['fork_game','Crear variante','Crea una partida de estudio desde la posición seleccionada sin borrar la partida de origen.','fork',{},[],false],
+ ['open_game','Abrir partida','Activa una partida guardada por su identificador.','open',{},['id'],false],
+ ['request_analysis','Solicitar análisis','Solicita a Stockfish tres mejores variantes para la FEN actual. El tablero debe estar abierto; el análisis queda pendiente hasta calcularse en su worker. Leer get_game después y usar solo analysis.fen coincidente.','request_analysis',{},[],false],
+ ['game_settings','Ajustar partida','Cambia título, dificultad o nivel de explicación del entrenador.','settings',{coachLevel:{type:'string',enum:['iniciacion','intermedio','avanzado']},title:{type:'string',maxLength:100},difficulty:{type:'integer',minimum:0,maximum:20}},[],false],
+ ['game_mode','Modo de juego','Cambia entre estudio de ambos bandos y jugar blancas contra Stockfish. Para continuar desde atrás crea una variante.','mode',{mode:{type:'string',enum:['play','study']}},['mode'],false],
+ ['import_pgn','Importar PGN','Importa una partida legal PGN como estudio. Conserva su posición inicial FEN si existe.','import',{pgn:{type:'string',maxLength:100000},difficulty:{type:'integer',minimum:0,maximum:20}},['pgn'],false],
+ ['resign_game','Abandonar','Registra el abandono de blancas. Utiliza solo si el usuario lo solicita.','resign',{},[],false],
+ ['resign_and_restart','Abandonar y reiniciar','Guarda la partida como abandonada y abre inmediatamente una nueva partida desde la posición inicial, conservando dificultad y nivel de explicación.','resign_and_new',{},[],false],
+ ['save_analysis','Guardar análisis','Guarda el análisis calculado por Stockfish en el tablero abierto. Solo la aplicación puede invocarlo.','analysis',{fen:{type:'string'},cp:{type:'number'},mate:{type:'number'},pv:{type:'string'},depth:{type:'integer',minimum:1,maximum:100},lines:{type:'array',maxItems:3,items:{type:'object',properties:{rank:{type:'integer'},depth:{type:'integer'},cp:{type:'number'},mate:{type:'number'},pv:{type:'string'}},required:['rank','depth','pv'],additionalProperties:false}}},['fen','pv','depth'],false]
+];
+function tools(){return defs.map(([name,title,description,action,extra,required,read])=>({name,title,description,inputSchema:{type:'object',properties:{...properties,...extra},required,additionalProperties:false},annotations:{readOnlyHint:read,destructiveHint:false,idempotentHint:read,openWorldHint:false},_meta:{ui:{resourceUri:uri,visibility:name==='save_analysis'?['app']:['model','app']},...(name==='get_game'?{'openai/ui':{entrypoints:[{type:'global'},{type:'thread'}]}}:{})}}));}
+export async function POST(req:Request){let msg:any;try{msg=await req.json()}catch{return Response.json({error:'JSON no válido'},{status:400})}if(!msg||typeof msg!=='object'||Array.isArray(msg))return Response.json({error:'Solicitud JSON-RPC no válida'},{status:400});const reply=(result:any)=>Response.json({jsonrpc:'2.0',id:msg.id,result},{headers:{'Cache-Control':'no-store'}});
+ if(msg.method==='server/discover')return reply({supportedVersions:['2026-07-28'],capabilities:{tools:{}}});
+ if(msg.method==='initialize')return reply({protocolVersion:msg.params?.protocolVersion||'2025-11-25',capabilities:{tools:{},resources:{},extensions:{'io.modelcontextprotocol/ui':{}}},serverInfo:{name:'Ajedrez PRO',version:'1.4.0'}});
+ if(msg.method?.startsWith('notifications/'))return new Response(null,{status:202});
+ if(msg.method==='ping')return reply({});
+ if(msg.method==='tools/list')return reply({tools:tools()});
+ if(msg.method==='resources/list')return reply({resources:[{uri,name:'Tablero de Ajedrez PRO',mimeType:'text/html;profile=mcp-app'}]});
+ if(msg.method==='resources/read'){if(msg.params?.uri!==uri)return Response.json({jsonrpc:'2.0',id:msg.id,error:{code:-32602,message:'Recurso desconocido'}});return reply({contents:[{uri,mimeType:'text/html;profile=mcp-app',text:widgetHtml,_meta:{ui:{prefersBorder:true,csp:{resourceDomains:['blob:'],connectDomains:[]}}}}]});}
+ if(msg.method==='tools/call'){const user=req.headers.get('oai-authenticated-user-id');if(!user)return new Response('Authentication required',{status:401});const def=defs.find(d=>d[0]===msg.params?.name);if(!def)return reply({isError:true,content:[{type:'text',text:'Herramienta desconocida'}]});try{const data=await execute(user,def[3],msg.params?.arguments||{});return reply({structuredContent:data,content:[{type:'text',text:JSON.stringify(data)}]});}catch(e){return reply({isError:true,content:[{type:'text',text:e instanceof Error?e.message:'Error de partida'}]});}}
+ return Response.json({jsonrpc:'2.0',id:msg.id,error:{code:-32601,message:'Method not found'}});
+}
+export async function GET(){return new Response('Ajedrez PRO MCP · use POST /mcp',{status:200});}
+export async function DELETE(){return new Response(null,{status:204});}

@@ -1,0 +1,5 @@
+interface:
+  display_name: Pistas progresivas
+  short_description: Recibe una pista cada vez, sin adelantar la solución
+  default_prompt: Usa $chess-hint-ladder. Dame una pista pequeña para la posición
+    actual.
