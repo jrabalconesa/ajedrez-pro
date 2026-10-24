@@ -8,6 +8,19 @@ import ChessPiece from '../components/chess-piece';
 type Bridge={kind?:'local'|'chatgpt';call:(action:string,args?:any)=>Promise<any>;context:(state:any)=>Promise<any>;ask:(text:string)=>Promise<any>;initial?:any;engineSource?:string};
 declare global{interface Window{__CHESS_BRIDGE__?:Bridge}}
 const names:any={k:'rey',q:'dama',r:'torre',b:'alfil',n:'caballo',p:'peón'};
+const exportNumbers:Record<string,Record<string,number>>={};
+function exportFilename(gameId:string,format:'pgn'|'fen'){
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Madrid',year:'2-digit',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const part=(type:string)=>parts.find(p=>p.type===type)!.value;
+ const date=part('year')+'.'+part('month')+'.'+part('day'),key='ajedrez-pro:export-numbers:'+date;
+ let numbers=exportNumbers[date]||{};
+ try{const stored=JSON.parse(localStorage.getItem(key)||'{}');if(stored&&typeof stored==='object'&&!Array.isArray(stored))numbers={...stored,...numbers};}catch{}
+ const valid=(n:unknown):n is number=>typeof n==='number'&&Number.isSafeInteger(n)&&n>0;
+ if(!valid(numbers[gameId]))numbers[gameId]=Math.max(0,...Object.values(numbers).filter(valid))+1;
+ exportNumbers[date]=numbers;
+ try{localStorage.setItem(key,JSON.stringify(numbers));}catch{}
+ return date+'_'+String(numbers[gameId]).padStart(2,'0')+'_ajedrez-pro.'+format;
+}
 export default function ChessApp(){
  const [game,setGame]=useState<any>(null),[selected,setSelected]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[engineStatus,setEngineStatus]=useState('Cargando Stockfish…'),[thinking,setThinking]=useState(false),[level,setLevel]=useState(6),[flipped,setFlipped]=useState(false),[tab,setTab]=useState('coach'),[saved,setSaved]=useState<any[]>([]),[loadText,setLoadText]=useState(''),[promotion,setPromotion]=useState<{from:string,to:string}|null>(null),[analysis,setAnalysis]=useState<any>(null),[title,setTitle]=useState(''),[embedded,setEmbedded]=useState(false),[moveText,setMoveText]=useState('');
  const [exportFormat,setExportFormat]=useState<'pgn'|'fen'>('pgn');
@@ -60,7 +73,7 @@ export default function ChessApp(){
  },[game?.id,game?.fen,game?.analysisRequested,engineStatus,busy,viewMode,solutions,hint,showFull,showAlternatives,analyzing,thinking,engineTick,analysis?.fen,analysis?.scope]);
  async function ask(prompt:string){if(!game)return;try{if(bridge.current&&embedded){await bridge.current.context({...current.current,analysis:analysis?.fen===game.fen?analysis:analysis?.fen===game.fen?analysis:game.analysis});await bridge.current.ask(prompt);}else{const text=prompt+'\n\nPosición y partida:\n'+JSON.stringify({fen:game.fen,pgn:game.pgn,mode:game.mode,cursor:game.cursor,analysis:analysis?.fen===game.fen?analysis:game.analysis});await navigator.clipboard.writeText(text);setNotice('Posición y pregunta copiadas. Pégalas en el chat de Ajedrez PRO.');}}catch{setError('No se pudo enviar. Puedes copiar el PGN y pegarlo en el chat.');}}
  const exportText=game?(exportFormat==='pgn'?(game.fullPgn||game.pgn):game.fen):'';
- function download(){if(!game||busy)return;const link=document.createElement('a'),url=URL.createObjectURL(new Blob([exportText+'\n'],{type:exportFormat==='pgn'?'application/x-chess-pgn;charset=utf-8':'text/plain;charset=utf-8'}));link.href=url;link.download='ajedrez-pro.'+exportFormat;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice(exportFormat.toUpperCase()+' preparado para descargar.');}
+ function download(){if(!game||busy)return;const link=document.createElement('a'),url=URL.createObjectURL(new Blob([exportText+'\n'],{type:exportFormat==='pgn'?'application/x-chess-pgn;charset=utf-8':'text/plain;charset=utf-8'}));link.href=url;link.download=exportFilename(game.id,exportFormat);document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice(exportFormat.toUpperCase()+' preparado para descargar.');}
  async function copyExport(){try{await navigator.clipboard.writeText(exportText);setNotice(exportFormat.toUpperCase()+' copiado.');}catch{setError('No se pudo copiar. Descarga el archivo o selecciona el texto de exportación.');}}
 
  async function list(){setTab('saved');try{const r=await api('list');setSaved(r.games);}catch(e){setError((e as Error).message)}}
