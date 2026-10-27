@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {Chess} from 'chess.js';
 import {CATALOG,exercise} from '../lib/aia-curriculum';
 import {freshAia,activeProfile,transitionAia,aiaView,localAia,mastery,trackLevel,buildPlan} from '../lib/aia';
-import {DEFAULT_PRACTICE,matchesPractice,searchExercises,topicMatches} from '../lib/aia-topics';
+import {DEFAULT_PRACTICE,TOPICS,topicAvailable,areaMatches,matchesPractice,searchExercises,topicMatches} from '../lib/aia-topics';
 const now=Date.UTC(2026,9,27,12);
-assert.equal(CATALOG.length,648);assert.equal(new Set(CATALOG.map(e=>e.id)).size,CATALOG.length);
+assert.ok(CATALOG.length>=648);assert.equal(new Set(CATALOG.map(e=>e.id)).size,CATALOG.length);
 for(const e of CATALOG){
  assert.ok(e.concept&&e.task&&e.explanation&&e.hints.length);
  if(e.fen){const c=new Chess(e.fen);assert.equal(c.isGameOver(),false,e.id+' starts finished');const initial=c.fen();for(const move of e.line!){assert.ok(c.move(move),e.id+' '+move);}if(e.line!.at(-1)!.endsWith('#'))assert.equal(c.isCheckmate(),true,e.id+' expected mate');for(const m of e.accepted||[])assert.ok(new Chess(initial).move(m));}
@@ -14,7 +14,7 @@ for(const e of CATALOG){
 for(const level of [0,1,2]){
  for(const track of ['opening','tactics','strategy','endgame']){
   const found=CATALOG.filter(e=>e.level===level&&e.track===track);
-  assert.equal(found.length,50,'Faltan ejercicios en '+track+' nivel '+level);
+  assert.ok(found.length>=50,'Faltan ejercicios en '+track+' nivel '+level);
   assert.ok(found.filter(e=>e.fen).length>=20,'Demasiada teoría sin tablero en '+track+' nivel '+level);
  }
 }
@@ -70,7 +70,7 @@ sp.practice={...DEFAULT_PRACTICE,area:'opening',topic:'italian',mode:'only'};
 let selectedPlan=buildPlan(sp,now);
 assert.ok(selectedPlan.available);assert.ok(selectedPlan.ids.length>0);
 assert.ok(selectedPlan.ids.every(id=>matchesPractice(exercise(id),sp.practice!)));
-assert.ok(selectedPlan.ids.length<4,'No rellenar con temas ajenos cuando hay pocas coincidencias');
+assert.equal(selectedPlan.ids.length,4,'Una sesión específica debe tener cuatro ejercicios');
 sp.reviews.push({exerciseId:'endgame-1-board',due:now-1,interval:0,failures:1,resolved:0});
 assert.ok(buildPlan(sp,now).ids.every(id=>exercise(id).track==='opening'));
 assert.equal(sp.reviews.length,1,'Conservar repasos excluidos');
@@ -90,4 +90,22 @@ assert.ok(CATALOG.some(e=>searchExercises(e,'Siciliana')&&e.title.includes('Sici
 const persisted=transitionAia(freshAia(),'settings',{revision:0,practice:{...DEFAULT_PRACTICE,area:'opening',topic:'italian',mode:'only'}},now);
 assert.equal(activeProfile(JSON.parse(JSON.stringify(persisted))).practice?.topic,'italian');
 assert.equal(activeProfile(transitionAia(persisted,'profile',{revision:1,name:'Nuevo'},now)).practice,undefined,'Cada perfil conserva sus filtros');
-console.log('AIA: 648 contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
+console.log('AIA: '+CATALOG.length+' contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
+
+// Todas las combinaciones ofrecidas por la interfaz hasta 1400 ELO deben
+// disponer de cuatro ejercicios distintos y formar una sesión exclusiva.
+for(const level of [0,1,2])for(const area of ['all','opening','middlegame','tactics','strategy','endgame'])for(const topic of TOPICS.filter(t=>topicAvailable(t.id,area))){
+ const practice={...DEFAULT_PRACTICE,area:area as any,topic:topic.id,mode:'only' as const};
+ const pool=CATALOG.filter(e=>e.level===level&&areaMatches(e.track,area)&&topicMatches(e,topic.id));
+ assert.ok(pool.length>=4,`Cobertura insuficiente: ${level}/${area}/${topic.id}: ${pool.length}`);
+ const profile=activeProfile(freshAia());profile.seed=level;profile.practice=practice;
+ const plan=buildPlan(profile,now);assert.equal(plan.available,true);assert.equal(plan.ids.length,4);
+ assert.ok(plan.ids.every(id=>matchesPractice(exercise(id),practice)));
+ assert.equal(new Set(plan.ids).size,4);
+ // El nombre visible del tema se puede utilizar también como búsqueda.
+ profile.practice={...practice,topic:'all',query:topic.label};
+ assert.ok(buildPlan(profile,now).available,`Búsqueda sin coincidencias: ${topic.label}`);
+}
+// Un texto sin relación con el tema debe seguir produciendo un vacío real.
+assert.equal(searchExercises(exercise('strategy-1-concept-0'),'apertura inexistente xyz'),false);
+console.log('Cobertura de filtros y sesiones por tema hasta 1400 ELO: OK');

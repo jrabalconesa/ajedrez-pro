@@ -1,9 +1,10 @@
 import {Chess} from 'chess.js';
+import {completeFoundations} from './aia-foundations';
 import {SUPPLEMENT_SEEDS} from './aia-supplement-seeds';
 export const TRACKS={opening:'Aperturas',tactics:'Táctica y cálculo',strategy:'Estrategia',endgame:'Finales'} as const;
 export type Track=keyof typeof TRACKS;
 export const LEVELS=[['Fundamentos','Hasta 600'],['Jugar con seguridad','600–1000'],['Construir un plan','1000–1400'],['Coordinar las piezas','1400–1800'],['Profundizar','1800–2000'],['Técnica avanzada','2000–2200'],['Perfeccionamiento','2200+']];
-export type Exercise={id:string;level:number;track:Track;title:string;concept:string;task:string;explanation:string;hints:string[];fen?:string;line?:string[];accepted?:string[];options?:string[];answer?:number;wrong?:Record<string,string>};
+export type Exercise={id:string;level:number;track:Track;title:string;concept:string;task:string;explanation:string;hints:string[];fen?:string;line?:string[];accepted?:string[];options?:string[];answer?:number;wrong?:Record<string,string>;topics?:string[]};
 export const CATALOG:Exercise[]=[];
 function position(setup:string[]|string){const c=typeof setup==='string'?new Chess(setup):new Chess();if(Array.isArray(setup))setup.forEach(m=>c.move(m));return c.fen();}
 function move(level:number,track:Track,title:string,concept:string,setup:string[]|string,task:string,line:string[],explanation:string,hints:string[],accepted?:string[],wrong?:Record<string,string>){CATALOG.push({id:`${track}-${level}-board`,level,track,title,concept,fen:position(setup),task,line,explanation,hints,accepted,wrong});}
@@ -240,6 +241,7 @@ for(let level=0;level<=2;level++){
  }
 }
 
+completeFoundations(CATALOG);
 CATALOG.sort((a,b)=>a.level-b.level||Object.keys(TRACKS).indexOf(a.track)-Object.keys(TRACKS).indexOf(b.track));
 export const SOURCES=[{title:'Lichess · Base de problemas CC0',url:'https://database.lichess.org/#puzzles'},{title:'Lichess · Catálogo de aperturas CC0',url:'https://github.com/lichess-org/chess-openings'},{title:'Chess.com · Planes de estudio por nivel',url:'https://www.chess.com/article/view/study-plan-directory'},{title:'Chess.com · Estrategia intermedia',url:'https://www.chess.com/article/view/study-plan-for-intermediate-players-strategy2'},{title:'ECU · Currículo y ejercicios progresivos',url:'https://edu.europechess.org/cie-package/'},{title:'Chess.com · Lecciones interactivas',url:'https://support.chess.com/en/articles/8609703-how-do-lessons-work-on-chess-com'}];
 export function exercise(id:string){const e=CATALOG.find(x=>x.id===id);if(!e)throw Error('Ejercicio no encontrado');return e;}

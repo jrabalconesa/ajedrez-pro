@@ -2,7 +2,7 @@ import {Chess} from 'chess.js';
 import {CATALOG,TRACKS,LEVELS,exercise,type Track,type Exercise} from './aia-curriculum';
 import {spanishSan} from './coach';
 import {resolveMove} from './move-input';
-import {AREAS,TOPICS,DEFAULT_PRACTICE,matchesPractice,type Practice} from './aia-topics';
+import {AREAS,TOPICS,DEFAULT_PRACTICE,matchesPractice,topicAvailable,type Practice} from './aia-topics';
 export type Attempt={id:string;date:number;exerciseId:string;track:Track;level:number;success:boolean;assisted:boolean;answer:string;fen?:string;reason:string;sessionId:string};
 type Review={exerciseId:string;due:number;interval:number;failures:number;resolved:number};
 export type Profile={id:string;name:string;seed:number;minutes:number;focus:'auto'|Track;practice?:Practice;attempts:Attempt[];reviews:Review[];session:Session|null;completed:{date:number;total:number;correct:number;independent:number}[]};
@@ -55,7 +55,9 @@ export function buildPlan(p:Profile,now=Date.now()){
  const items=ids.map(id=>({id,kind:dueIds.has(id)?'repaso':p.attempts.some(a=>a.exerciseId===id)?'refuerzo':'nuevo'}));
  const newCount=items.filter(i=>i.kind==='nuevo').length;
  const reason=targeted?`${only?'Solo este tema':'Darle prioridad'}: ${AREAS[practice.area]}${practice.topic!=='all'?' · '+TOPICS.find(t=>t.id===practice.topic)?.label:''}${practice.query?' · «'+practice.query+'»':''}. ${matching.length} ejercicios disponibles en tu dificultad actual. ${only?'Los repasos de otros temas quedan pendientes.':'Hasta tres de cada cuatro ejercicios se dedicarán al tema; se conservan los repasos pendientes.'}${ids.length<count?' La sesión será más breve porque no hay más ejercicios distintos en esta selección.':''}`:due.length?'Hay repasos espaciados pendientes. Se indican por separado para que sepas por qué vuelven ejercicios conocidos.':simplified?'Las últimas dificultades aconsejan reforzar bases de esa habilidad antes de avanzar.':!p.attempts.length?'Primera sesión de comprobación: tu nivel inicial es orientativo y no acredita habilidades.':newCount?'Priorizamos variantes nuevas de cada área para seguir avanzando sin repetir la sesión anterior.':'Ya has practicado las variantes disponibles para esta etapa; hoy toca refuerzo. Ampliaremos el catálogo progresivamente.';
- return {ids,items,reason,due:due.length,matching:matching.length,targeted,available:!targeted||matching.length>0};
+ const pool=[...candidates.values()].flat();
+ const topicCounts=Object.fromEntries(TOPICS.filter(t=>topicAvailable(t.id,practice.area)).map(t=>[t.id,pool.filter(e=>matchesPractice(e,{...practice,topic:t.id,query:''})).length]));
+ return {ids,items,reason,due:due.length,matching:matching.length,targeted,topicCounts,available:!targeted||matching.length>0};
 }
 export function sessionFen(e:Exercise,s:Session){if(!e.fen)return null;const c=new Chess(e.fen);for(const m of s.path)c.move(m);return c.fen();}
 function result(p:Profile,s:Session,e:Exercise,success:boolean,answer:string,now:number,fen?:string){
@@ -81,7 +83,7 @@ export function transitionAia(input:AiaStore,action:string,a:any={},now=Date.now
   if(a.focus!==undefined){if(a.focus!=='auto'&&!tracks.includes(a.focus))throw Error('Objetivo no válido');p.focus=a.focus;}
   if(a.practice!==undefined){
    const v=a.practice;
-   if(!v||!Object.hasOwn(AREAS,v.area)||!['only','priority'].includes(v.mode)||typeof v.query!=='string'||v.query.length>100||!(v.topic==='all'||TOPICS.some(t=>t.id===v.topic&&(v.area==='all'||v.area===t.area||(t.area==='middlegame'&&['strategy','tactics'].includes(v.area))))))throw Error('Tema de práctica no válido');
+   if(!v||!Object.hasOwn(AREAS,v.area)||!['only','priority'].includes(v.mode)||typeof v.query!=='string'||v.query.length>100||!(v.topic==='all'||topicAvailable(v.topic,v.area)))throw Error('Tema de práctica no válido');
    p.practice={area:v.area,topic:v.topic,query:v.query.trim(),mode:v.mode};
   }
  }else if(action==='start'){
