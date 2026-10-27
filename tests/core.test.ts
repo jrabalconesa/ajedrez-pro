@@ -46,3 +46,12 @@ assert.equal(castle.get('g1')?.type,'k');assert.equal(castle.get('f1')?.type,'r'
 assert.match(moveOutcome(initial.fen(),castle.history())!,/Enrocas/);
 let enpassant=new Chess();for(const m of ['e4','a6','e5','d5','exd6'])enpassant.move(m);assert.equal(enpassant.get('d5'),undefined);assert.equal(enpassant.get('d6')?.type,'p');
 console.log('Tres modos: guía sin soluciones, amenazas actuales, resultado de jugada, 32 piezas, enroque y captura al paso: OK');
+
+// Existing games without a stored side still belong to White.
+const legacy=fresh();delete legacy.playerColor;assert.equal(view(legacy).playerColor,'w');assert.equal(view(legacy).phase,'active');
+let blackSide=fresh(6,undefined,'b');assert.equal(view(blackSide).phase,'engine_pending');
+blackSide=mutate(blackSide,'move',{move:'e4'});assert.equal(view(blackSide).phase,'active');
+blackSide=mutate(blackSide,'settings',{playerColor:'w'});assert.equal(view(blackSide).phase,'engine_pending');
+blackSide=mutate(blackSide,'settings',{playerColor:'b'});blackSide=mutate(blackSide,'resign',{});assert.equal(outcome(blackSide)?.result,'1-0');
+blackSide=mutate(blackSide,'settings',{playerColor:'w'});assert.equal(outcome(blackSide)?.result,'1-0');
+console.log('Compatibilidad de partidas blancas, cambio de color y resultado de abandono: OK');

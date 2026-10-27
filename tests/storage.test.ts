@@ -19,3 +19,12 @@ assert.equal(resumed.mode,'play');assert.equal(resumed.phase,'engine_pending');a
 const abandonedId=resumed.id;const restarted:any=await execute('user-a','resign_and_new',{id:abandonedId,revision:resumed.revision});
 assert.notEqual(restarted.id,abandonedId);assert.equal(restarted.history.length,0);assert.equal(restarted.cursor,0);assert.equal(restarted.difficulty,resumed.difficulty);assert.equal(restarted.mode,'play');assert.equal((await execute('user-a','get',{id:abandonedId}) as any).outcome.reason,'resignation');
 console.log('Storage: aislamiento, revisiones, variantes manuales y cambio de jugada automático: OK');
+
+const black:any=await execute('user-black','new',{playerColor:'b'});assert.equal(black.playerColor,'b');assert.equal(black.phase,'engine_pending');
+const blackMoved:any=await execute('user-black','move',{id:black.id,move:'e4'});assert.equal(blackMoved.phase,'active');
+assert.equal((await execute('user-black','get',{id:black.id}) as any).playerColor,'b');
+const blackRestart:any=await execute('user-black','resign_and_new',{id:black.id});assert.equal(blackRestart.playerColor,'b');assert.equal(blackRestart.phase,'engine_pending');
+assert.equal((await execute('user-black','get',{id:black.id}) as any).outcome.result,'1-0');
+console.log('Site: color negro guardado y conservado al reiniciar: OK');
+
+const aia:any=await execute('user-a','aia',{op:'get'});const started:any=await execute('user-a','aia',{op:'start',revision:aia.revision,exerciseId:'opening-1-board'});assert.equal(started.profiles[0].session.ids[0],'opening-1-board');assert.equal((await execute('user-b','aia',{op:'get'}) as any).profiles[0].session,null);await assert.rejects(execute('user-a','aia',{op:'settings',revision:0,minutes:10}),/otra ventana/);assert.equal((await execute('user-a','aia',{op:'get'}) as any).revision,started.revision);console.log('AIA Site: aislamiento por usuario, guardado y revisiones: OK');

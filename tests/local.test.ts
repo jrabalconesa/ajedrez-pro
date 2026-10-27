@@ -14,3 +14,19 @@ assert.throws(()=>normalizeAnalysis(g.fen,{depth:8,pv:'e2e5',cp:20}));
 assert.throws(()=>localExecute({getItem:()=>'{broken',setItem:()=>{}},'get'),/No se pueden leer/);
 assert.throws(()=>localExecute({getItem:()=>null,setItem:()=>{throw Error()}},'new'),/No se pudo guardar/);
 console.log('Pages: guardado persistente, variantes sin perder originales, abandono/reinicio, PGN completo, análisis SAN y fallos de almacenamiento: OK');
+
+// A black player gets the first white move from Stockfish and keeps their side.
+let black:any=localExecute(storage,'new',{playerColor:'b',difficulty:3});
+assert.equal(black.playerColor,'b');assert.equal(black.phase,'engine_pending');
+black=localExecute(storage,'move',{id:black.id,move:'e4'});assert.equal(black.phase,'active');
+black=localExecute(storage,'move',{id:black.id,move:'c5'});assert.equal(black.phase,'engine_pending');
+assert.match(black.fullPgn,/\[White "Stockfish 19"\]/);assert.match(black.fullPgn,/\[Black "Jose"\]/);
+assert.equal((localExecute(storage,'get') as any).playerColor,'b');
+black=localExecute(storage,'seek',{id:black.id,cursor:1});assert.equal(black.playerColor,'b');
+black=localExecute(storage,'branch_move',{id:black.id,move:'e5'});assert.equal(black.playerColor,'b');
+black=localExecute(storage,'mode',{id:black.id,mode:'play'});const blackId=black.id;
+black=localExecute(storage,'resign_and_new',{id:black.id});assert.equal(black.playerColor,'b');assert.equal(black.phase,'engine_pending');
+assert.equal((localExecute(storage,'get',{id:blackId}) as any).outcome.result,'1-0');
+assert.throws(()=>localExecute(storage,'settings',{id:black.id,playerColor:'x'}),/Color no válido/);
+assert.throws(()=>localExecute(storage,'new',{playerColor:'x'}),/Color no válido/);
+console.log('Color negro: apertura del motor, turnos, persistencia, PGN, variante y reinicio: OK');

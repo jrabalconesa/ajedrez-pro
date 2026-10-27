@@ -65,3 +65,15 @@ Los comentarios del entrenador son observaciones de reglas; una pérdida forzada
 ## Licencias
 
 Stockfish 19: GPLv3. Copia en `public/engine/COPYING.txt` y, al construir Pages, `engine/COPYING.txt`. Fuente y versión del motor distribuido: https://github.com/nmrugg/stockfish.js/tree/v19.0.1 . Chess.js y las restantes dependencias conservan sus respectivas licencias. No se necesitan claves API para jugar ni analizar.
+
+## AIA · Aprendizaje Interactivo Adaptativo (v1.5)
+
+Sección independiente de la partida: 56 ejercicios originales en siete etapas y cuatro áreas (aperturas, táctica y cálculo, estrategia y finales). Incluye perfiles, sesiones reanudables, pistas, corrección activa, variantes preparadas, historial y repaso espaciado. El ELO de cada etapa solo orienta el temario. El catálogo inicial avanzado no equivale a una formación completa de maestría.
+
+El avance por área requiere tres aciertos consecutivos sin ayuda, dos ejercicios y práctica en dos días. Los errores se repasan al día siguiente; tras resolver sin ayuda, el intervalo aumenta a 3, 7, 14 y 30 días. Dos errores recientes en un área proponen refuerzo de una etapa anterior. La selección manual de etapa no acredita dominio.
+
+Sites guarda el progreso por usuario en R2 mediante escrituras condicionales; GitHub Pages lo conserva por perfil en localStorage. No existe sincronización de progreso entre ambas plataformas. El tablero de ejercicios no modifica las partidas.
+
+`npm test` regenera el widget autocontenido antes de comprobar MCP y valida también el catálogo y el motor adaptativo. Para regenerarlo sin pruebas: `node scripts/prepare-widget.mjs`. No editar los archivos generados a mano.
+
+Referencias de la ruta: [planes por nivel de Chess.com](https://www.chess.com/article/view/study-plan-directory), [estrategia intermedia](https://www.chess.com/article/view/study-plan-for-intermediate-players-strategy2), [ECU CiE](https://edu.europechess.org/cie-package/) y [lecciones interactivas](https://support.chess.com/en/articles/8609703-how-do-lessons-work-on-chess-com). Contenidos y reglas adaptativas originales.

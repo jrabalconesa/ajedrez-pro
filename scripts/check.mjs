@@ -1,4 +1,5 @@
 import {build} from 'esbuild';import {spawnSync,spawn} from 'node:child_process';import fs from 'node:fs';
+const prepared=spawnSync(process.execPath,['scripts/prepare-widget.mjs'],{stdio:'inherit'});if(prepared.status)process.exit(prepared.status);
 fs.mkdirSync('.sites-runtime/tests',{recursive:true});
 await build({entryPoints:['tests/core.test.ts'],outfile:'.sites-runtime/tests/core.mjs',bundle:true,platform:'node',format:'esm'});
 let r=spawnSync(process.execPath,['.sites-runtime/tests/core.mjs'],{stdio:'inherit'});if(r.status)process.exit(r.status);
@@ -8,4 +9,4 @@ await new Promise((resolve,reject)=>{const child=spawn(process.execPath,['node_m
 await build({entryPoints:['tests/mcp.test.ts'],outfile:'.sites-runtime/tests/mcp.mjs',bundle:true,platform:'node',format:'esm',plugins:[{name:'mock-env',setup(b){b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'env',namespace:'mock'}));b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:'export const env={};'}));}}]});
 r=spawnSync(process.execPath,['.sites-runtime/tests/mcp.mjs'],{stdio:'inherit'});if(r.status)process.exit(r.status);
 
-for(const name of ['engine','local']){await build({entryPoints:['tests/'+name+'.test.ts'],outfile:'.sites-runtime/tests/'+name+'.mjs',bundle:true,platform:'node',format:'esm'});const result=spawnSync(process.execPath,['.sites-runtime/tests/'+name+'.mjs'],{stdio:'inherit'});if(result.status)process.exit(result.status);}
+for(const name of ['engine','local','aia']){await build({entryPoints:['tests/'+name+'.test.ts'],outfile:'.sites-runtime/tests/'+name+'.mjs',bundle:true,platform:'node',format:'esm'});const result=spawnSync(process.execPath,['.sites-runtime/tests/'+name+'.mjs'],{stdio:'inherit'});if(result.status)process.exit(result.status);}

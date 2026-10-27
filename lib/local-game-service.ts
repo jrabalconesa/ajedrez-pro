@@ -1,14 +1,16 @@
+import {localAia} from './aia';
 import {fresh,fromPgn,view,type Game} from './chess-state';
 import {transitionGame} from './game-operations';
 const key='ajedrez-pro:games:v1';
 type Store={active?:string;games:Record<string,Game>};
 export function localExecute(storage:Pick<Storage,'getItem'|'setItem'>,action:string,a:any={}){
+ if(action==='aia')return localAia(storage,a.op||'get',a);
  const raw=storage.getItem(key);let state:Store;
  try{state=raw?JSON.parse(raw):{games:{}};if(!state.games||typeof state.games!=='object')throw Error();}catch{throw Error('No se pueden leer las partidas guardadas en este navegador. Conserva sus datos antes de volver a intentarlo.');}
  if(action==='list')return {games:Object.values(state.games).map(g=>({id:g.id,title:g.title,updatedAt:g.updatedAt})).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))};
  if(action==='new'||action==='import'){
   if(a.difficulty!==undefined&&(!Number.isInteger(a.difficulty)||a.difficulty<0||a.difficulty>20))throw Error('Nivel entre 0 y 20');
-  const game=action==='new'?fresh(a.difficulty,a.fen):fromPgn(String(a.pgn||''),a.difficulty);if(a.fen)game.mode='study';if(a.title)game.title=String(a.title).slice(0,100);state.games[game.id]=game;state.active=game.id;
+  const game=action==='new'?fresh(a.difficulty,a.fen,a.playerColor):fromPgn(String(a.pgn||''),a.difficulty,a.playerColor);if(a.fen)game.mode='study';if(a.title)game.title=String(a.title).slice(0,100);state.games[game.id]=game;state.active=game.id;
  }else{
   const id=a.id||state.active,g=state.games[id];if(!g){if(action==='get'&&!id)return {empty:true};throw Error('Partida no encontrada');}
   if(action==='get')return view(g);
