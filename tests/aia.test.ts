@@ -3,7 +3,7 @@ import {Chess} from 'chess.js';
 import {CATALOG,exercise} from '../lib/aia-curriculum';
 import {freshAia,activeProfile,transitionAia,aiaView,localAia,mastery,trackLevel,buildPlan} from '../lib/aia';
 const now=Date.UTC(2026,9,27,12);
-assert.equal(CATALOG.length,56);assert.equal(new Set(CATALOG.map(e=>e.id)).size,56);
+assert.equal(CATALOG.length,88);assert.equal(new Set(CATALOG.map(e=>e.id)).size,56);
 for(const e of CATALOG){
  assert.ok(e.concept&&e.task&&e.explanation&&e.hints.length);
  if(e.fen){const c=new Chess(e.fen);assert.equal(c.isGameOver(),false,e.id+' starts finished');const initial=c.fen();for(const move of e.line!){assert.ok(c.move(move),e.id+' '+move);}if(e.line!.at(-1)!.endsWith('#'))assert.equal(c.isCheckmate(),true,e.id+' expected mate');for(const m of e.accepted||[])assert.ok(new Chess(initial).move(m));}
@@ -26,7 +26,31 @@ const oldId=state.active,oldAttempts=activeProfile(state).attempts.length;action
 const p=activeProfile(state);p.seed=1;p.attempts=[];for(let i=0;i<3;i++)p.attempts.push({id:String(i),exerciseId:i%2?'opening-1-concept-0':'opening-1-board',track:'opening',level:1,date:now+(i===2?86400000:0),success:true,assisted:false,answer:'x',reason:'x',sessionId:'x'});assert.equal(mastery(p,'opening',1).ready,true);assert.equal(trackLevel(p,'opening'),2);assert.equal(trackLevel(p,'endgame'),1);
 p.attempts[2].assisted=true;assert.equal(mastery(p,'opening',1).ready,false);
 p.attempts=[];assert.equal(buildPlan(p,now+3*86400000).due>0,true);
+// Regression: tres sesiones seguidas del mismo día no deben repetir la primera.
+const rotation=freshAia(),rotated=activeProfile(rotation);
+rotated.seed=1;
+const scheduled:string[][]=[];
+for(let session=0;session<3;session++){
+ const plan=buildPlan(rotated,now+session*60000);
+ scheduled.push(plan.ids);
+ assert.equal(plan.ids.length,4);
+ assert.ok(plan.items.every(item=>item.kind==='nuevo'));
+ for(const id of plan.ids){
+  const e=exercise(id);
+  rotated.attempts.push({id:'rotation-'+session+'-'+id,date:now+session*60000,exerciseId:id,track:e.track,level:e.level,success:true,assisted:false,answer:'correcto',reason:'simulación',sessionId:'session-'+session});
+ }
+}
+assert.equal(new Set(scheduled.flat()).size,12,'debe haber 12 ejercicios distintos en tres sesiones');
+assert.notDeepEqual(scheduled[0],scheduled[2],'la tercera sesión no debe ser idéntica a la primera');
+const longer=freshAia(),longerProfile=activeProfile(longer);
+longerProfile.seed=1;longerProfile.minutes=30;
+const longPlan=buildPlan(longerProfile,now);
+assert.equal(longPlan.ids.length,8);
+assert.equal(new Set(longPlan.ids.map(id=>exercise(id).track)).size,4,'sesión larga equilibrada');
+rotated.reviews.push({exerciseId:scheduled[0][0],due:now-60000,interval:0,failures:1,resolved:0});
+const duePlan=buildPlan(rotated,now+4*60000);
+assert.equal(duePlan.items.find(item=>item.id===scheduled[0][0])?.kind,'repaso');
 const map=new Map<string,string>(),storage={getItem:(k:string)=>map.get(k)||null,setItem:(k:string,v:string)=>{map.set(k,v)}};
 let v=localAia(storage,'get');v=localAia(storage,'start',{revision:v.revision,exerciseId:'opening-1-board'});assert.equal(localAia(storage,'get').profiles[0].session!.id,v.profiles[0].session!.id);
 assert.throws(()=>localAia({...storage,setItem:()=>{throw Error()}},'settings',{revision:v.revision,minutes:10}),/guardar AIA/);
-console.log('AIA: 56 contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
+console.log('AIA: 88 contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
