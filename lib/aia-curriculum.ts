@@ -1,4 +1,5 @@
 import {Chess} from 'chess.js';
+import {SUPPLEMENT_SEEDS} from './aia-supplement-seeds';
 export const TRACKS={opening:'Aperturas',tactics:'Táctica y cálculo',strategy:'Estrategia',endgame:'Finales'} as const;
 export type Track=keyof typeof TRACKS;
 export const LEVELS=[['Fundamentos','Hasta 600'],['Jugar con seguridad','600–1000'],['Construir un plan','1000–1400'],['Coordinar las piezas','1400–1800'],['Profundizar','1800–2000'],['Técnica avanzada','2000–2200'],['Perfeccionamiento','2200+']];
@@ -106,6 +107,129 @@ quiz(6,'opening','Preparación crítica y respuesta concreta','Las variantes cr�
 quiz(6,'tactics','Seleccionar líneas críticas','El cálculo avanzado prioriza respuestas que pueden refutar la idea principal.','De diez respuestas posibles del rival, ¿cuáles investigas primero?',['Jaques, capturas forzantes, amenazas decisivas y defensas críticas','Solo respuestas pasivas','Las diez por orden alfabético'],0,'La selección de candidatos debe incluir las refutaciones más fuertes.');
 quiz(6,'strategy','Transformar ventajas','Una pequeña ventaja puede cambiar de naturaleza a lo largo de la partida.','Puedes cambiar un ataque incierto por un final con debilidad fija rival. ¿Cómo decides?',['Comparando ambas posiciones y el contrajuego restante','Suponiendo que el final gana solo','Eligiendo siempre la posición más espectacular'],0,'La transformación es buena si preserva opciones de progreso y limita contrajuego.');
 quiz(6,'endgame','Tablas teóricas y técnica práctica','Una posición teóricamente de tablas aún puede ser difícil de defender sin precisión.','Tu análisis indica tablas, pero el rival dispone de muchas pruebas prácticas. ¿Qué estudias?',['El plan defensivo exacto y sus errores típicos','Solo la cifra de evaluación','Una apertura distinta'],0,'La teoría debe convertirse en decisiones concretas que puedas ejecutar.');
+
+
+// Extensión de AIA: cada combinación de área y etapa 0–2 alcanza 50 ejercicios.
+// Las secuencias históricas importadas son de Lichess (CC0) y se comprueban
+// con chess.js antes de incluirse. Los ejercicios previos preservan sus IDs.
+const categoryCount=(track:Track,level:number)=>CATALOG.filter(e=>e.level===level&&e.track===track).length;
+const existingPositions=new Set(CATALOG.filter(e=>e.fen).map(e=>e.fen));
+const motifTitle:Record<string,string>={
+ fork:'ataque doble',pin:'clavada',skewer:'enfilada',mate:'ataque al rey',
+ mateIn1:'mate en una',mateIn2:'mate en dos',discoveredAttack:'ataque descubierto',
+ hangingPiece:'pieza indefensa',backRankMate:'mate de última fila',
+ promotion:'promoción',underPromotion:'promoción especial',advancedPawn:'peón avanzado',
+ rookEndgame:'final de torres',pawnEndgame:'final de peones',
+ knightEndgame:'final de caballos',bishopEndgame:'final de alfiles',
+ queenEndgame:'final de damas',quietMove:'jugada tranquila',
+ defensiveMove:'defensa precisa',equality:'igualar la posición',
+ advantage:'conseguir ventaja',sacrifice:'sacrificio',intermezzo:'jugada intermedia'
+};
+function lessonTheme(tags:string){
+ const preferred=['fork','pin','skewer','discoveredAttack','backRankMate','mateIn1','mateIn2','promotion','underPromotion','advancedPawn','pawnEndgame','rookEndgame','knightEndgame','bishopEndgame','queenEndgame','quietMove','defensiveMove','equality','advantage','hangingPiece','mate'];
+ return preferred.find(t=>tags.split(' ').includes(t))||'advantage';
+}
+function getUci(c:Chess,uci:string){
+ const from=uci.slice(0,2),to=uci.slice(2,4),promotion=uci.slice(4)||undefined;
+ if(!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci))throw Error('UCI inválida');
+ const result=c.move({from,to,promotion});
+ if(!result)throw Error('Jugada no válida');
+ return result.san;
+}
+function addLicensedPuzzle(level:number,track:Track,row:readonly [string,string,string,number,string]){
+ const [puzzleId,fen,moves,rating,tags]=row;
+ const c=new Chess(fen),ucis=moves.trim().split(/\s+/);
+ getUci(c,ucis[0]); // Lichess da el FEN ANTES de la jugada del adversario.
+ const initial=c.fen();if(existingPositions.has(initial)||c.isGameOver())return;
+ const line=ucis.slice(1).map(uci=>getUci(c,uci));
+ if(!line.length||line.length%2!==1)return; // el usuario realiza la última jugada.
+ const motif=lessonTheme(tags),subject=motifTitle[motif]||'cálculo';
+ const task=track==='tactics'
+  ?'Encuentra la continuación táctica. Empieza por jaques, capturas y amenazas.'
+  :track==='endgame'
+  ?'Resuelve esta posición de final. Calcula también las respuestas del rival.'
+  :'Encuentra la decisión práctica adecuada en esta posición. Compara candidatos y la mejor defensa rival.';
+ const preface=track==='tactics'?'Táctica y cálculo':track==='endgame'?'Técnica de finales':'Decisiones estratégicas';
+ CATALOG.push({id:'lichess-'+track+'-'+level+'-'+puzzleId,level,track,
+  title:preface+' · '+subject+' · '+puzzleId,
+  concept:'Posición real de entrenamiento de Lichess (CC0). Tema de trabajo: '+subject+'. El nivel del puzzle ('+rating+') no representa tu ELO.',
+  task,fen:initial,line,
+  explanation:'La continuación preparada de este problema utiliza '+subject+'. Revisa el orden de jugadas y los recursos rivales. Es una solución de entrenamiento, no un análisis nuevo de Stockfish.',
+  hints:['Comprueba primero los jaques y las piezas amenazadas de ambos bandos.','Busca candidatos relacionados con '+subject+' y calcula la defensa más exigente.']});
+ existingPositions.add(initial);
+}
+function addLicensedOpening(level:number,row:readonly [string,string,string]){
+ const [eco,name,pgn]=row;
+ const tokens=pgn.replace(/\d+\.(?:\.\.)?/g,' ').trim().split(/\s+/).filter(Boolean);
+ if(tokens.length<2)return;
+ const c=new Chess(),history:string[]=[];
+ for(const san of tokens){history.push(c.fen());c.move(san);}
+ const fen=history[history.length-1];
+ if(existingPositions.has(fen))return;
+ const moveSan=c.history().at(-1)!;
+ const moving=moveSan.startsWith('N')?'caballo':moveSan.startsWith('B')?'alfil':moveSan.startsWith('R')?'torre':moveSan.startsWith('Q')?'dama':moveSan.startsWith('K')?'rey':moveSan.startsWith('O-O')?'rey y torre':'peón';
+ const sample=new Chess(fen);sample.move(moveSan);
+ if(sample.isGameOver()&&sample.isCheckmate()&&level===0)return;
+ CATALOG.push({id:'opening-extra-'+level+'-'+eco+'-'+CATALOG.filter(e=>e.level===level&&e.track==='opening').length,
+  level,track:'opening',title:'Repertorio · '+name,
+  concept:'Apertura '+eco+'. Estudia su estructura, el desarrollo y la seguridad de ambos reyes. Es una línea de repertorio, no la única jugada válida.',
+  task:'En esta posición, encuentra la siguiente jugada de la línea '+name+'.',
+  fen,line:[moveSan],explanation:'Esta continuación procede del catálogo abierto de aperturas de Lichess. El movimiento desarrolla o reubica '+moving+'; comprueba qué amenazas y planes aparecen después.',
+  hints:['Identifica el bando al turno y comprueba las amenazas inmediatas.','La jugada característica implica '+moving+'. Analiza sus casillas de destino.']});
+ existingPositions.add(fen);
+}
+// Preguntas didácticas propias que cubren fundamentos estratégicos (no son
+// posiciones puntuadas por Stockfish). Cada caso exige una decisión distinta.
+const beginnerStrategy=[
+ ['Antes de un ataque al rey','El rey sin enrocar puede quedar expuesto al abrir columnas.','Quieres atacar con dama y torres mientras tu rey está en e1. ¿Qué plan comparas primero?',['Asegurar el rey y terminar el desarrollo','Dejar al rey en el centro a cualquier precio','Mover la dama cinco veces'],0],
+ ['Ventaja de espacio','El espacio deja maniobrar, pero los avances requieren apoyos.','Controlas el centro con peones avanzados. ¿Cómo aprovechas esa ventaja?',['Desarrollar piezas detrás de los peones y sostenerlos','Avanzar todos los peones sin cálculo','Intercambiar siempre la dama'],0],
+ ['Ruptura de peón','Una ruptura consiste en avanzar o cambiar peones para abrir líneas.','Tus alfiles están encerrados por tus peones centrales. ¿Qué recurso consideras?',['Preparar una ruptura central segura','Dejar todas las piezas pasivas','Mover solamente los peones del rey'],0],
+ ['Evitar piezas sueltas','Una pieza sin defensa puede ser vulnerable a tácticas.','Tu alfil avanzado está atacado y no tiene defensor. ¿Qué priorizas?',['Calcular retirada, defensa o contraataque forzante','Atacar un peón lejano sin mirar','Mover siempre otro alfil'],0],
+ ['Conectar las torres','Las torres coordinan mejor si las piezas dejan libre la primera fila.','Has enrocado, pero la dama y un alfil separan tus torres. ¿Qué plan es coherente?',['Terminar el desarrollo y conectar torres','Avanzar el peón f sin mirar el rey','Cambiar las torres por peones'],0],
+ ['Cambio favorable','Un cambio debe valorarse por material y posición posterior.','Puedes cambiar tu caballo malo por el alfil activo del rival. ¿Qué compruebas?',['Cómo quedan el material y las casillas tras recapturar','Solo el valor nominal del caballo','Si la captura da jaque inmediatamente'],0],
+ ['Peón retrasado','Un peón retrasado puede tener dificultades para avanzar con seguridad.','El rival tiene un peón retrasado en columna semiabierta. ¿Qué plan estudiarías?',['Presionarlo con una torre y limitar su avance','Ignorarlo siempre','Sacrificar la dama por él'],0],
+ ['Caballo en el centro','Los caballos centrales suelen controlar más casillas.','Puedes mejorar el caballo de a1 con saltos legales hasta d4. ¿Qué miras antes?',['Ruta segura y casillas de apoyo','El color de tu dama','Solo si el rival ya ha enrocado'],0],
+ ['Alfil de casillas blancas','Los peones de tu propio color pueden limitar un alfil.','Tus peones se fijaron en casillas blancas y tu alfil también corre por blancas. ¿Qué haces?',['Buscar un cambio de estructura o nuevas diagonales','Suponer que siempre está mejor que un caballo','Retirarlo a una esquina sin plan'],0],
+ ['Crear una amenaza doble','Una amenaza útil exige respuesta del rival.','Puedes atacar dos piezas a la vez pero una está defendida. ¿Qué calculas?',['Respuestas forzadas y recapturas','Solo los puntos de las dos piezas','La apertura que jugaste'],0],
+ ['La peor pieza','Mejorar la pieza menos activa suele ser un plan útil.','Tienes una torre activa y un caballo bloqueado atrás. Sin táctica urgente, ¿qué mejoras?',['La actividad del caballo','La torre ya activa, sin razón','Un peón lateral sin propósito'],0],
+ ['Defender un punto crítico','Una casilla débil facilita invasiones.','Las negras amenazan instalar una torre en tu segunda fila. ¿Qué debes evaluar?',['Cómo controlar la casilla de entrada','Un ataque lejano sin vínculo','Una promoción que tarda diez jugadas'],0],
+ ['Cuándo cambiar damas','El cambio de damas suele reducir posibilidades de ataque directo.','Vas por delante de material y tu rey está inseguro. ¿Qué plan es habitual?',['Estudiar un cambio de damas favorable','Buscar siempre más complicaciones','Entregar todas las torres'],0],
+ ['Peones doblados','Los peones doblados pueden ser débiles, pero abren columnas.','Tu rival tiene peones doblados tras un cambio. ¿Qué evalúas?',['Debilidad futura frente a líneas y pareja de alfiles','Victoria automática','Que los peones doblados no pueden moverse nunca'],0],
+ ['Un peón aislado','Un peón sin peones amigos adyacentes suele necesitar apoyo de piezas.','Tu rival tiene un peón aislado en d5. ¿Qué plan consideras?',['Bloquearlo y presionarlo si es posible','Darle casillas libres sin motivo','Alejar todas las piezas del centro'],0],
+ ['La columna abierta','Una columna sin peones permite actividad a las torres.','La columna e está abierta y dispones de una torre inactiva. ¿Qué estudiarías?',['Ocupar la columna y buscar entradas','Enviarla al borde sin amenazas','Cambiar todas las piezas menores sin mirar'],0],
+ ['Actividad antes que peón','Una ganancia material puede dar contrajuego al adversario.','Capturar un peón lateral deja a tu dama atrapada. ¿Qué decides?',['No capturarlo sin resolver la amenaza de encierro','Capturarlo siempre porque vale un punto','Ignorar las jugadas del rival'],0],
+ ['Control del centro','Las cuatro casillas e4, d4, e5, d5 influyen en movilidad.','El rival ocupa dos casillas centrales y tus piezas siguen sin desarrollar. ¿Qué priorizas?',['Desarrollo y presión central','Mover solo peones de torre','Dejar todos los caballos en su sitio'],0],
+ ['Un peón pasado','Un peón pasado carece de peones enemigos que puedan frenarlo en su columna o adyacentes.','Tienes un peón pasado y tu torre está mal colocada. ¿Qué valoras?',['Apoyarlo y mejorar tu torre antes de avanzar','Avanzar a ciegas','Cambiar tu propio peón por uno rival sin motivo'],0],
+ ['Reducir contrajuego','La profilaxis anticipa el plan del rival.','Ves que el rival prepara un avance que abrirá tu rey. ¿Qué haces?',['Examinar cómo impedirlo o responder de forma concreta','Suponer que no jugará el avance','Ofrecer un cambio cualquiera'],0],
+ ['La defensa del rey','Mover peones del enroque puede abrir líneas de ataque.','Planeas h4 mientras el rival controla la columna h y tu rey está en g1. ¿Qué compruebas?',['Si el avance debilita el enroque','Solo cuánto espacio ganas','El valor nominal del peón'],0],
+ ['Elegir un plan simple','Un plan debe tener objetivo y jugadas que lo favorezcan.','No ves táctica inmediata. ¿Qué primer paso te ayuda?',['Identificar tu peor pieza y una casilla útil','Mover la primera pieza disponible','Elegir el mate de una partida distinta'],0],
+ ['Revisar un cambio','Tras un intercambio puede abrirse una columna o diagonal.','Vas a cambiar peones en el centro. ¿Qué revisas?',['Qué piezas quedan activas y qué líneas se abren','Solo si el peón contrario vale uno','La posición antes de que existan cambios'],0],
+ ['Dama demasiado expuesta','La dama puede perder tiempos frente a ataques de piezas menores.','Tu dama sale pronto y los caballos rivales pueden atacarla. ¿Qué evalúas?',['Cuántos tiempos de desarrollo perderás','Que toda salida temprana gana','La cantidad de peones de la fila a'],0],
+ ['Ganar un tiempo','Atacar una pieza obliga al rival a responder si no hay recursos mejores.','Desarrollas el alfil dando amenaza a una dama rival. ¿Qué has conseguido en principio?',['Desarrollo con ganancia de tiempo, sujeto a cálculo','Mate automático','Derecho a mover otra vez'],0],
+ ['Un punto fuerte','Un puesto avanzado es una casilla útil difícil de expulsar con peones.','Tu caballo puede entrar en e5 sostenido y sin peones rivales que lo expulsen. ¿Qué compruebas?',['Si las piezas rivales pueden cambiarlo y qué aporta','Solo que e5 es central','Que no existe ningún alfil rival'],0],
+ ['La pareja de alfiles','Dos alfiles pueden destacar en posiciones abiertas.','Tienes la pareja de alfiles con el centro cerrado. ¿Qué considerarías?',['Preparar aperturas de líneas sin perder seguridad','Mantener el centro cerrado para siempre','Cambiar los alfiles por peones'],0],
+ ['Una debilidad permanente','Un peón atrasado o casilla débil puede exigir defensa constante.','Tu rival debe defender c6 con dos piezas. ¿Qué objetivo tiene aumentar la presión?',['Atar defensores y crear otros puntos de entrada','Ganar siempre c6 en una jugada','Impulsar tu rey a c6 sin mirar ataques'],0],
+ ['Coordinar para atacar','Un ataque suele requerir más piezas que la dama sola.','Tu dama ataca el enroque rival, pero ninguna otra pieza apoya. ¿Qué mejoras?',['Incorporar piezas y comprobar la defensa','Sacrificar la dama por un peón','Empujar todos los peones propios'],0],
+ ['No confundir iniciativa y material','La iniciativa significa proponer amenazas que obligan a responder.','Puedes ganar un peón perdiendo el control de la única columna abierta. ¿Qué sopesas?',['El valor del peón frente a la actividad y amenazas rivales','Solo el valor de un punto','Que capturar siempre es obligatorio'],0]
+] as const;
+for(let level=0;level<=2;level++){
+ const need=50-categoryCount('opening',level);
+ for(const row of SUPPLEMENT_SEEDS.opening[level]){
+  if(categoryCount('opening',level)>=50)break;
+  try{addLicensedOpening(level,row);}catch{/* Omitir exclusivamente registros fuente ilegales. */}
+ }
+ // Fundamentos: incluye conceptos específicos, además de posiciones de decisión.
+ for(const [title,concept,task,options,answer] of level===0?beginnerStrategy:[]){
+  if(categoryCount('strategy',level)>=50)break;
+  quiz(level,'strategy',title,concept,task,[...options],answer,'Valora primero amenazas y actividad; '+concept);
+ }
+ for(const area of ['tactics','strategy','endgame'] as const){
+  for(const row of SUPPLEMENT_SEEDS[area][level]){
+   if(categoryCount(area,level)>=50)break;
+   try{addLicensedPuzzle(level,area,row);}catch{/* Cada línea se valida y las ilegales no entran. */}
+  }
+ }
+}
 
 CATALOG.sort((a,b)=>a.level-b.level||Object.keys(TRACKS).indexOf(a.track)-Object.keys(TRACKS).indexOf(b.track));
 export const SOURCES=[{title:'Chess.com · Planes de estudio por nivel',url:'https://www.chess.com/article/view/study-plan-directory'},{title:'Chess.com · Estrategia intermedia',url:'https://www.chess.com/article/view/study-plan-for-intermediate-players-strategy2'},{title:'ECU · Currículo y ejercicios progresivos',url:'https://edu.europechess.org/cie-package/'},{title:'Chess.com · Lecciones interactivas',url:'https://support.chess.com/en/articles/8609703-how-do-lessons-work-on-chess-com'}];
