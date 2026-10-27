@@ -3,12 +3,21 @@ import {Chess} from 'chess.js';
 import {CATALOG,exercise} from '../lib/aia-curriculum';
 import {freshAia,activeProfile,transitionAia,aiaView,localAia,mastery,trackLevel,buildPlan} from '../lib/aia';
 const now=Date.UTC(2026,9,27,12);
-assert.equal(CATALOG.length,88);assert.equal(new Set(CATALOG.map(e=>e.id)).size,56);
+assert.equal(CATALOG.length,648);assert.equal(new Set(CATALOG.map(e=>e.id)).size,CATALOG.length);
 for(const e of CATALOG){
  assert.ok(e.concept&&e.task&&e.explanation&&e.hints.length);
  if(e.fen){const c=new Chess(e.fen);assert.equal(c.isGameOver(),false,e.id+' starts finished');const initial=c.fen();for(const move of e.line!){assert.ok(c.move(move),e.id+' '+move);}if(e.line!.at(-1)!.endsWith('#'))assert.equal(c.isCheckmate(),true,e.id+' expected mate');for(const m of e.accepted||[])assert.ok(new Chess(initial).move(m));}
  else {assert.ok(e.options!.length>=3);assert.ok(e.answer!>=0&&e.answer!<e.options!.length);}
 }
+// Cada etapa hasta 1400 ELO necesita exactamente 50 ejercicios por área.
+for(const level of [0,1,2]){
+ for(const track of ['opening','tactics','strategy','endgame']){
+  const found=CATALOG.filter(e=>e.level===level&&e.track===track);
+  assert.equal(found.length,50,'Faltan ejercicios en '+track+' nivel '+level);
+  assert.ok(found.filter(e=>e.fen).length>=20,'Demasiada teoría sin tablero en '+track+' nivel '+level);
+ }
+}
+assert.ok(CATALOG.filter(e=>e.id.startsWith('lichess-')).length>300);
 const saavedra=new Chess(exercise('endgame-5-board').fen!);saavedra.move('c8=Q');saavedra.move('Rc4+');saavedra.move('Qxc4');assert.equal(saavedra.isStalemate(),true);const saavedraR=new Chess(exercise('endgame-5-board').fen!);saavedraR.move('c8=R');saavedraR.move('Rc4+');saavedraR.move('Rxc4');assert.equal(saavedraR.isStalemate(),false);
 let state=freshAia();
 function action(op:string,a:any={},time=now){const p=activeProfile(state),s=p.session;state=transitionAia(state,op,{revision:state.revision,sessionId:s?.id,exerciseId:s?.ids[s.index],step:s?.step,...a},time);return state;}
@@ -53,4 +62,4 @@ assert.equal(duePlan.items.find(item=>item.id===scheduled[0][0])?.kind,'repaso')
 const map=new Map<string,string>(),storage={getItem:(k:string)=>map.get(k)||null,setItem:(k:string,v:string)=>{map.set(k,v)}};
 let v=localAia(storage,'get');v=localAia(storage,'start',{revision:v.revision,exerciseId:'opening-1-board'});assert.equal(localAia(storage,'get').profiles[0].session!.id,v.profiles[0].session!.id);
 assert.throws(()=>localAia({...storage,setItem:()=>{throw Error()}},'settings',{revision:v.revision,minutes:10}),/guardar AIA/);
-console.log('AIA: 88 contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
+console.log('AIA: 648 contenidos, FEN y secuencias legales, mates, respuestas alternativas, reintentos, pistas, solución, perfiles, progreso por área, repaso, persistencia y conflictos: OK');
