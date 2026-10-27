@@ -15,16 +15,34 @@ function day(t:number){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/
 export function mastery(p:Profile,track:Track,level:number){const rows=p.attempts.filter(a=>a.track===track&&a.level===level);const independent=rows.filter(a=>a.success&&!a.assisted),recent=rows.slice(-6),last=rows.slice(-3);return {attempts:rows.length,good:independent.length,days:new Set(independent.map(a=>day(a.date))).size,variants:new Set(independent.map(a=>a.exerciseId)).size,ready:last.length===3&&last.every(a=>a.success&&!a.assisted)&&new Set(independent.map(a=>day(a.date))).size>=2&&new Set(independent.map(a=>a.exerciseId)).size>=2,accuracy:recent.length?Math.round(recent.filter(a=>a.success&&!a.assisted).length/recent.length*100):null};}
 export function trackLevel(p:Profile,t:Track){let level=p.seed;while(level<6&&mastery(p,t,level).ready)level++;return level;}
 export function buildPlan(p:Profile,now=Date.now()){
- const due=p.reviews.filter(r=>r.due<=now).sort((a,b)=>a.due-b.due);const count=p.minutes>=30?8:4,ids:string[]=[];
- for(const r of due.slice(0,Math.max(1,Math.floor(count/2))))ids.push(r.exerciseId);
+ const due=p.reviews.filter(r=>r.due<=now).sort((a,b)=>a.due-b.due);
+ const count=p.minutes>=30?8:4,ids:string[]=[];
+ const dueIds=new Set(due.map(r=>r.exerciseId));
+ for(const r of due.slice(0,Math.max(1,Math.floor(count/2))))if(!ids.includes(r.exerciseId))ids.push(r.exerciseId);
  const ordered=p.focus==='auto'?tracks:[p.focus,...tracks.filter(t=>t!==p.focus)];
- for(const t of ordered){let level=trackLevel(p,t);const last=p.attempts.filter(a=>a.track===t).slice(-2);if(last.length===2&&last.every(a=>!a.success)&&level>0)level--;
-  const candidates=CATALOG.filter(e=>e.track===t&&e.level===level).sort((a,b)=>{const date=(id:string)=>p.attempts.filter(x=>x.exerciseId===id).at(-1)?.date||0;return date(a.id)-date(b.id);});
-  for(const e of candidates)if(!ids.includes(e.id)&&ids.length<count&&(p.minutes>=30||!ids.some(id=>exercise(id).track===t)))ids.push(e.id);
+ const candidates=new Map<Track,Exercise[]>();
+ for(const t of ordered){
+  let level=trackLevel(p,t);
+  const last=p.attempts.filter(a=>a.track===t).slice(-2);
+  if(last.length===2&&last.every(a=>!a.success)&&level>0)level--;
+  const lastSeen=(id:string)=>p.attempts.filter(a=>a.exerciseId===id).at(-1)?.date||0;
+  candidates.set(t,CATALOG.filter(e=>e.track===t&&e.level===level).sort((a,b)=>lastSeen(a.id)-lastSeen(b.id)));
  }
+ // Repartir los ejercicios por áreas: en sesiones largas, una segunda vuelta
+ // es preferible a concentrar los ocho ejercicios en la primera área.
+ for(let round=0;round<count&&ids.length<count;round++){
+  for(const t of ordered){
+   const next=candidates.get(t)?.find(e=>!ids.includes(e.id));
+   if(next&&ids.length<count)ids.push(next.id);
+  }
+ }
+ // El catálogo inicial solo es un recurso adicional si falta contenido.
  for(const e of CATALOG.filter(e=>e.level===p.seed))if(ids.length<count&&!ids.includes(e.id))ids.push(e.id);
  const simplified=ordered.some(t=>{const a=p.attempts.filter(a=>a.track===t).slice(-2);return a.length===2&&a.every(a=>!a.success);});
- return {ids,reason:due.length?'Empezamos por errores cuyo repaso está pendiente; después equilibramos las áreas.':simplified?'Las últimas dificultades aconsejan reforzar bases de esa habilidad antes de avanzar.':p.attempts.length?'Elegimos variantes menos recientes al nivel de cada habilidad.':'Primera sesión de comprobación: tu nivel inicial es orientativo y no acredita habilidades.',due:due.length};
+ const items=ids.map(id=>({id,kind:dueIds.has(id)?'repaso':p.attempts.some(a=>a.exerciseId===id)?'refuerzo':'nuevo'}));
+ const newCount=items.filter(i=>i.kind==='nuevo').length;
+ const reason=due.length?'Hay repasos espaciados pendientes. Se indican por separado para que sepas por qué vuelven ejercicios conocidos.':simplified?'Las últimas dificultades aconsejan reforzar bases de esa habilidad antes de avanzar.':!p.attempts.length?'Primera sesión de comprobación: tu nivel inicial es orientativo y no acredita habilidades.':newCount?'Priorizamos variantes nuevas de cada área para seguir avanzando sin repetir la sesión anterior.':'Ya has practicado las variantes disponibles para esta etapa; hoy toca refuerzo. Ampliaremos el catálogo progresivamente.';
+ return {ids,items,reason,due:due.length};
 }
 export function sessionFen(e:Exercise,s:Session){if(!e.fen)return null;const c=new Chess(e.fen);for(const m of s.path)c.move(m);return c.fen();}
 function result(p:Profile,s:Session,e:Exercise,success:boolean,answer:string,now:number,fen?:string){
