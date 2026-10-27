@@ -220,13 +220,22 @@ for(let level=0;level<=2;level++){
  }
  // Fundamentos: incluye conceptos específicos, además de posiciones de decisión.
  for(const [title,concept,task,options,answer] of level===0?beginnerStrategy:[]){
-  if(categoryCount('strategy',level)>=50)break;
+  if(categoryCount('strategy',level)>=26)break;
   quiz(level,'strategy',title,concept,task,[...options],answer,'Valora primero amenazas y actividad; '+concept);
  }
  for(const area of ['tactics','strategy','endgame'] as const){
   for(const row of SUPPLEMENT_SEEDS[area][level]){
    if(categoryCount(area,level)>=50)break;
    try{addLicensedPuzzle(level,area,row);}catch{/* Cada línea se valida y las ilegales no entran. */}
+  }
+ }
+ // Si una posición importada no supera la validación, completar fundamentos
+ // con las preguntas originales aún no utilizadas sin duplicar las anteriores.
+ if(level===0&&categoryCount('strategy',0)<50){
+  for(const [title,concept,task,options,answer] of beginnerStrategy){
+   if(categoryCount('strategy',0)>=50)break;
+   if(CATALOG.some(e=>e.level===0&&e.track==='strategy'&&e.title===title))continue;
+   quiz(0,'strategy',title,concept,task,[...options],answer,'Valora primero amenazas y actividad; '+concept);
   }
  }
 }
