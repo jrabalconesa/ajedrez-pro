@@ -37,3 +37,9 @@ aside{display:flex;flex-direction:column;gap:16px;min-width:0}.before-card{backg
 @media(max-width:680px){.aia h1{font-size:31px}.aia-heading{display:block}.aia-profile{margin-top:18px;max-width:300px}.aia-workspace{display:flex;flex-direction:column}.aia-workspace>*{width:100%}.aia-stats{grid-template-columns:1fr 1fr}.aia-stats>div{padding:12px}.aia-settings,.aia-catalog{grid-template-columns:1fr}.aia-sessionbar{display:block}.aia-sessionbar button{margin:12px 0;max-width:none}.aia-trackgrid{grid-template-columns:1fr 1fr}.aia-trackgrid .aia-card{padding:13px}.aia-trackgrid h3{font-size:21px}.aia-move,.aia-profileform{display:block}.aia-move button,.aia-profileform button{margin-top:10px;width:100%}.mode-switch{flex-wrap:wrap}.aia-turn{flex-direction:column;gap:0}}
 
 .aia-practice{min-width:0;border:1px solid #b7c8a3;border-radius:8px;padding:18px;margin:24px 0}.aia-practice legend{font-size:20px;font-weight:600;padding:0 8px}.aia-practice .aia-settings{margin-top:6px}
+
+/* Ajedrez PRO · identidad bicolor coherente con la familia PRO */
+.brand-wordmark{min-width:0;white-space:nowrap;letter-spacing:.4px;line-height:1.12}
+.brand-name{color:#243c32;font-weight:700}
+.brand-pro{color:#7b9a5d;font-weight:800}
+.brand-wordmark small{white-space:normal}
