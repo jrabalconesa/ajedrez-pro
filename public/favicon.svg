@@ -1,6 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Caballo de Ajedrez PRO">
-<rect width="64" height="64" rx="13" fill="#243c32"/>
-<path d="M17 47h33v6H14v-4l3-2Zm5-4 3-10-8-7 4-11 13-6 13 11-4 8 5 15H22Zm10-24-8 4 8 6-5 12h14l-5-15 4-5-6-5-2 3Z" fill="#e9f0df" fill-rule="evenodd"/>
-<circle cx="33" cy="21" r="2" fill="#243c32"/>
-<path d="M20 27 13 29l6 5 6-1" fill="#e9f0df"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Caballo de Ajedrez PRO mirando a la izquierda">
+<rect width="128" height="128" rx="19" fill="#064B32"/>
+<path d="M59 17 Q77 8 96 29 Q83 22 70 27 Z" fill="#B9DC55"/>
+<path d="M73 31 Q101 28 104 57 Q100 76 91 83 Q99 56 73 31" fill="#7BB83C"/>
+<path d="M52 22 49 8 Q66 11 67 27 Q86 33 89 57 L85 91 73 74 Q63 85 48 91 L40 91 51 71 Q44 66 43 58 L35 66 Q29 70 24 64 L19 58 Q17 52 22 47 L38 30 42 20Z" fill="#FFFBE9"/>
+<path d="M54 32 Q63 43 49 54 Q37 59 38 68 Q39 78 53 91 L42 91 48 75 Q32 64 40 52 Q46 44 54 32" fill="#87BD40"/>
+<path d="M71 44 Q86 52 78 84 L77 88 75 68 68 56 Z" fill="#78B63A"/>
+<path d="M29 47 Q32 38 47 38 L40 47 29 51Z" fill="#064B32"/>
+<path d="M20 56 25 51 27 53 22 61Z" fill="#064B32"/>
+<path d="M24 65 Q32 68 37 61 Q37 68 30 71Z" fill="#FFFBE9"/>
+<path d="M46 20 45 12 54 21 49 29Z" fill="#064B32"/>
+<path d="M41 95 H88 Q93 95 93 101 Q93 105 88 105 H40 Q36 105 36 101 Q36 97 41 95Z" fill="#DDEBAA"/>
+<path d="M35 109 H92 Q98 109 98 117 H29 Q29 109 35 109Z" fill="#94C542"/>
 </svg>
