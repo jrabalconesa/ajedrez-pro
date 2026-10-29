@@ -154,3 +154,28 @@ footer{margin-top:16px;padding:12px 0;line-height:1.5}
 @media(max-width:600px){.aia-objective h1{font-size:22px}.aia-board-active .aia-heading{margin:6px 0}.aia-board-active .aia-profile label{width:100%}.aia-board-active .aia-profile select{min-width:0;flex:1}.aia-sessionbar button{min-height:44px;max-width:none}.aia-turn{flex-direction:row;align-items:center;gap:7px}.aia-turn b{flex-shrink:0}.aia-turn span{text-align:right;font-size:11px}.aia-sessionbar{margin-top:6px}}
 
 .analysis-controls{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin:6px 0 10px}.analysis-controls label{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:650}.analysis-controls select{padding:5px 8px;max-width:100%}.analysis-controls small{font-size:.75rem;color:var(--muted,#647269)}.training-settings{display:grid;gap:8px}.training-settings label{font-size:.85rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.training-settings select{max-width:100%}.training-settings .micro{margin:0 0 4px}.suggested-move small{font-size:.68rem;font-weight:400}@media(max-width:600px){.analysis-controls{gap:3px}.analysis-controls small{font-size:.68rem}.analysis-controls label{font-size:.76rem}}
+
+/* Keep advice and move feedback together above the board at every viewport. */
+.move-feedback{display:flex;align-items:center;gap:5px 10px;flex-wrap:wrap;margin:0 0 6px;padding:6px 9px;border:1px solid #ccd4ce;border-left-width:3px;border-radius:6px;background:#f4f6f4;color:#46534b;font-size:13px;font-weight:400;line-height:1.3;overflow-wrap:anywhere}
+.move-feedback p{flex:1 1 220px;margin:0;font-size:inherit;font-weight:400;line-height:inherit}
+.move-feedback .secondary{flex:0 0 auto;margin:0;padding:4px 9px;min-height:36px;font-size:12px;font-weight:400;line-height:1.2;color:inherit;border:1px solid currentColor;background:transparent}
+.move-feedback-good{color:#166534;background:#f0f8f1;border-color:#8cba96}
+.move-feedback-ok{color:#854d0e;background:#fff8e8;border-color:#d6ae53}
+.move-feedback-bad{color:#b42318;background:#fff3f1;border-color:#df9c96}
+.board-suggestion{margin-bottom:6px;padding:5px 9px}
+.suggestion-controls .solution-choice{min-height:28px;font-size:13px}
+.suggestion-controls button{min-height:36px;font-size:12px;padding:4px 9px}
+.board-suggestion .suggested-move{font-size:13px;line-height:1.3;margin:2px 0 0}
+.board-suggestion .suggested-move b{font-size:15px}
+.analysis-controls{margin:4px 0 6px;gap:3px 10px}
+@media(max-width:600px){
+ .move-feedback{font-size:12px;padding:5px 7px;gap:3px 7px;margin-bottom:5px}
+ .move-feedback p{flex-basis:190px}
+ .move-feedback .secondary{font-size:11px;min-height:44px;padding:3px 7px}
+ .board-suggestion{padding:4px 7px;margin-bottom:5px}
+ .suggestion-controls .solution-choice{font-size:12px;min-height:24px}
+ .suggestion-controls button{min-height:44px;font-size:11px}
+ .board-suggestion .suggested-move{font-size:12px}
+ .board-suggestion .suggested-move b{font-size:14px}
+ .board-aid-settings summary{font-size:11px}
+}
