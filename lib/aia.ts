@@ -1,11 +1,12 @@
 import {Chess} from 'chess.js';
+import {freshTraining,trainingSettings,recordTraining,type Training} from './training';
 import {CATALOG,TRACKS,LEVELS,exercise,type Track,type Exercise} from './aia-curriculum';
 import {spanishSan} from './coach';
 import {resolveMove} from './move-input';
 import {AREAS,TOPICS,DEFAULT_PRACTICE,matchesPractice,topicAvailable,type Practice} from './aia-topics';
 export type Attempt={id:string;date:number;exerciseId:string;track:Track;level:number;success:boolean;assisted:boolean;answer:string;fen?:string;reason:string;sessionId:string};
 type Review={exerciseId:string;due:number;interval:number;failures:number;resolved:number};
-export type Profile={id:string;name:string;seed:number;minutes:number;focus:'auto'|Track;practice?:Practice;attempts:Attempt[];reviews:Review[];session:Session|null;completed:{date:number;total:number;correct:number;independent:number}[]};
+export type Profile={training?:Training;id:string;name:string;seed:number;minutes:number;focus:'auto'|Track;practice?:Practice;attempts:Attempt[];reviews:Review[];session:Session|null;completed:{date:number;total:number;correct:number;independent:number}[]};
 export type Session={id:string;started:number;ids:string[];index:number;step:number;path:string[];hints:number;mistakes:number;assisted:boolean;done:boolean;revealed:boolean;results:{exerciseId:string;independent:boolean;success:boolean}[];feedback:{kind:string;text:string};reason:string};
 export type AiaStore={revision:number;active:string;profiles:Profile[]};
 const DAY=86400000,INTERVALS=[1,3,7,14,30];
@@ -74,7 +75,9 @@ export function transitionAia(input:AiaStore,action:string,a:any={},now=Date.now
  if(action==='get')return state;
  if(a.revision!==state.revision)throw Error('AIA ha cambiado en otra ventana. Actualiza para continuar.');
  const p=activeProfile(state);
- if(action==='profile'){
+ if(action==='training_settings'){p.training=trainingSettings(p.training||freshTraining(),a);
+ }else if(action==='training_result'){const target=state.profiles.find(p=>p.id===a.game?.training?.profileId);if(!target)throw Error('Perfil de la partida no encontrado');target.training=recordTraining(target.training||freshTraining(),a.game,now);
+ }else if(action==='profile'){
   if(a.profileId){if(!state.profiles.some(p=>p.id===a.profileId))throw Error('Perfil no encontrado');state.active=a.profileId;}
   else{const name=String(a.name||'').trim().slice(0,60);if(!name)throw Error('Introduce un nombre');if(state.profiles.length>=20)throw Error('Máximo 20 perfiles');const id=crypto.randomUUID();state.profiles.push({...freshAia().profiles[0],id,name,attempts:[],reviews:[],completed:[]});state.active=id;}
  }else if(action==='settings'){
@@ -134,7 +137,7 @@ export function transitionAia(input:AiaStore,action:string,a:any={},now=Date.now
 }
 export function aiaView(s:AiaStore,now=Date.now()){
  const p=activeProfile(s),session=p.session,e=session&&session.index<session.ids.length?exercise(session.ids[session.index]):null;
- return {...s,plan:buildPlan(p,now),currentExercise:e?{...e,answer:undefined,line:session?.done?e.line:undefined,accepted:undefined,fen:sessionFen(e,session!)}:null,tracks:tracks.map(track=>{const level=trackLevel(p,track);return {track,label:TRACKS[track],level,...mastery(p,track,level)};}),storageNotice:'El progreso de Sites y el de GitHub Pages se guardan por separado.'};
+ return {...s,training:p.training||freshTraining(),plan:buildPlan(p,now),currentExercise:e?{...e,answer:undefined,line:session?.done?e.line:undefined,accepted:undefined,fen:sessionFen(e,session!)}:null,tracks:tracks.map(track=>{const level=trackLevel(p,track);return {track,label:TRACKS[track],level,...mastery(p,track,level)};}),storageNotice:'El progreso de Sites y el de GitHub Pages se guardan por separado.'};
 }
 export function localAia(storage:Pick<Storage,'getItem'|'setItem'>,action:string,a:any={}){
  const raw=storage.getItem('ajedrez-pro:aia:v1');let s:AiaStore;

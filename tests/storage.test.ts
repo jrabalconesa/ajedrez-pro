@@ -28,3 +28,10 @@ assert.equal((await execute('user-black','get',{id:black.id}) as any).outcome.re
 console.log('Site: color negro guardado y conservado al reiniciar: OK');
 
 const aia:any=await execute('user-a','aia',{op:'get'});const started:any=await execute('user-a','aia',{op:'start',revision:aia.revision,exerciseId:'opening-1-board'});assert.equal(started.profiles[0].session.ids[0],'opening-1-board');assert.equal((await execute('user-b','aia',{op:'get'}) as any).profiles[0].session,null);await assert.rejects(execute('user-a','aia',{op:'settings',revision:0,minutes:10}),/otra ventana/);assert.equal((await execute('user-a','aia',{op:'get'}) as any).revision,started.revision);console.log('AIA Site: aislamiento por usuario, guardado y revisiones: OK');
+
+let training:any=await execute('training-user','aia',{op:'get'});let trained:any=await execute('training-user','new',{useTraining:true});assert.equal(trained.difficulty,1);assert.equal(trained.training.profileId,'jose');
+for(const move of ['e4','e5','Bc4','Nc6','Qh5','Nf6','Qxf7#'])trained=await execute('training-user','move',{id:trained.id,revision:trained.revision,move});
+training=await execute('training-user','aia',{op:'training_result',revision:training.revision,gameId:trained.id});assert.equal(training.training.pending.length,1);
+await assert.rejects(execute('another-user','aia',{op:'training_result',revision:0,gameId:trained.id}),/no encontrada/);
+training=await execute('training-user','aia',{op:'training_result',revision:training.revision,gameId:trained.id});assert.equal(training.training.results.length,1);
+console.log('Rival adaptativo Site: resultado derivado de la partida, persistencia, idempotencia y aislamiento entre usuarios: OK');

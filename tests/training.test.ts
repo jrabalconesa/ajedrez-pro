@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import {fresh,mutate,view} from '../lib/chess-state';
+import {freshTraining,attachTraining,recordTraining,trainingSettings} from '../lib/training';
+import {localExecute} from '../lib/local-game-service';
+import {moveGrade,score} from '../lib/engine-settings';
+assert.equal(moveGrade(300,-400).grade,'bad','Incluso la mejor opción de una pieza puede ser roja frente a la alternativa global');
+assert.equal(moveGrade(30,20).grade,'good');assert.ok(score({mate:2})>score({cp:2000}));assert.ok(score({mate:-1})<score({cp:-2000}));
+function won(level:number,assisted=false){let g=attachTraining(fresh(level),'jose',{...freshTraining(),level});for(const move of ['e4','e5','Bc4','Nc6','Qh5','Nf6','Qxf7#'])g=mutate(g,'move',{move});g.training!.assisted=assisted;return g;}
+let t=freshTraining();
+for(let i=0;i<3;i++)t=recordTraining(t,won(1));assert.equal(t.level,2);assert.equal(t.pending.length,0);
+const aided=won(2,true);t=recordTraining(t,aided);assert.equal(t.results.at(-1)!.counted,false);assert.equal(t.pending.length,0);const n=t.results.length;t=recordTraining(t,aided);assert.equal(t.results.length,n);
+let black=attachTraining(fresh(2,undefined,'b'),'jose',{...t,level:2});for(const move of ['e4','e5','Bc4','Nc6','Qh5','Nf6','Qxf7#'])black=mutate(black,'move',{move});assert.equal(recordTraining(t,black).results.at(-1)!.score,0);
+let lower=freshTraining();for(let i=0;i<3;i++){const loss=won(1);loss.playerColor='b';lower=recordTraining(lower,loss);}assert.equal(lower.level,0,'Tres derrotas bajan solo un nivel');
+const manual=trainingSettings(t,{adaptive:false});assert.equal(recordTraining(manual,won(2)).level,2);
+assert.throws(()=>trainingSettings(t,{level:21}));
+const data=new Map<string,string>();const storage={getItem:(k:string)=>data.get(k)||null,setItem:(k:string,v:string)=>{data.set(k,v);}};
+let p:any=localExecute(storage,'aia',{op:'get'});let g:any=localExecute(storage,'new',{useTraining:true});assert.equal(g.difficulty,1);assert.equal(g.training.profileId,'jose');
+g=localExecute(storage,'settings',{id:g.id,revision:g.revision,trainingAssisted:true});g=localExecute(storage,'settings',{id:g.id,revision:g.revision,trainingAssisted:false});assert.equal(g.training.assisted,true,'Una ayuda consultada no se puede desmarcar');
+for(const move of ['e4','e5','Bc4','Nc6','Qh5','Nf6','Qxf7#'])g=localExecute(storage,'move',{id:g.id,revision:g.revision,move});
+p=localExecute(storage,'aia',{op:'training_result',revision:p.revision,gameId:g.id,game:{training:{assisted:false}}});assert.equal(p.training.results[0].assisted,true,'El resultado se obtiene de la partida guardada');assert.equal(p.training.level,1);
+p=localExecute(storage,'aia',{op:'profile',revision:p.revision,name:'Otro'});const other:any=localExecute(storage,'new',{useTraining:true});assert.equal(other.training.profileId,p.active);assert.equal(p.training.results.length,0,'Perfiles independientes');
+const old:any=localExecute(storage,'get',{id:g.id});assert.equal(old.training.profileId,'jose');
+const studied=mutate(won(1),'seek',{cursor:2});assert.equal(studied.training!.assisted,true);
+console.log('Entrenamiento: comparación global, mates, cambios de un paso, ayudas persistentes, resultados idempotentes y separación por perfil: OK');
