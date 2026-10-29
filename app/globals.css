@@ -78,3 +78,32 @@ aside{display:flex;flex-direction:column;gap:16px;min-width:0}.before-card{backg
  .aia-heading{margin:18px 0}.aia h1{font-size:28px}.aia-card{padding:16px}.aia-trackgrid{grid-template-columns:1fr}.aia-practice{padding:12px}.aia-practice legend{font-size:18px}.aia-stats{gap:8px}
 }
 @media(max-width:360px){.app{padding-left:8px;padding-right:8px}.timeline{gap:2px}.timeline button{min-width:40px;width:40px}.board-panel{padding:8px}.suggestion-controls{gap:2px}}
+
+/* Keep the optional recommendation concise at every size. */
+.board-suggestion .suggested-move{font-size:14px;line-height:1.3;margin:3px 0 0}
+.board-suggestion .suggested-move b{font-size:16px}
+@media(max-width:600px){
+ .app{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+ header{padding:6px 0}.brand{gap:8px;font-size:18px;line-height:1.1}.brand-logo{width:32px;height:32px;flex-basis:32px}.brand small{font-size:10px;margin-top:2px}
+ .intro{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 0;margin:0}
+ .intro>div:first-child{min-width:0}.intro h1{font-size:19px;line-height:1.15;letter-spacing:-.3px}.intro .subtitle{display:none}
+ .intro .session{font-size:10px;line-height:1.25;margin:0;max-width:110px;flex:0 0 auto;text-align:right}.intro .session .status-dot{width:5px;height:5px;margin-right:4px}
+ .color-choice{margin:0 0 6px;gap:6px 10px}.color-choice label{font-size:12px;gap:8px}.color-choice select{font-size:12px;padding:4px 9px;min-height:36px}.color-choice small{display:none}
+ .board-panel{padding:7px}
+ .board-suggestion{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;padding:4px 8px;margin:0 0 5px}
+ .suggestion-controls{display:contents}
+ .suggestion-controls .solution-choice{grid-column:1;grid-row:1;min-height:24px;font-size:12px;line-height:1.2;gap:6px;margin:0}
+ .suggestion-controls .solution-choice input{width:17px;height:17px;margin:0}
+ .suggestion-controls button{grid-column:2;grid-row:1 / span 2;align-self:center;min-height:44px;font-size:11px;line-height:1.2;padding:4px 9px}
+ .board-suggestion .suggested-move{grid-column:1;grid-row:2;font-size:12px;line-height:1.25;margin:0 0 1px}
+ .board-suggestion .suggested-move b{font-size:14px}
+ .board-panel>.player:not(.bottom){gap:7px;padding:0 0 5px;min-height:36px}
+ .board-panel>.player:not(.bottom) .avatar{width:26px;height:26px;font-size:21px}
+ .board-panel>.player:not(.bottom) b{font-size:12px;line-height:1.2}
+ .board-panel>.player:not(.bottom) small{font-size:10px;line-height:1.2;margin-top:1px}
+ .board-panel>.player:not(.bottom) .icon-button{height:36px;width:44px;min-width:44px;font-size:17px}
+ .mode-switch{padding:4px 8px calc(4px + env(safe-area-inset-bottom,0px))}
+ .mode-switch button{min-height:48px;gap:2px;padding:4px 2px;font-size:11px}.mode-switch svg{width:20px;height:20px}
+ .toast{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:360px){.intro h1{font-size:18px}.intro .session{font-size:9px;max-width:95px}.suggestion-controls .solution-choice{font-size:11px}}
