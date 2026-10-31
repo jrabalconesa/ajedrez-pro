@@ -109,3 +109,34 @@ for(const level of [0,1,2])for(const area of ['all','opening','middlegame','tact
 // Un texto sin relación con el tema debe seguir produciendo un vacío real.
 assert.equal(searchExercises(exercise('strategy-1-concept-0'),'apertura inexistente xyz'),false);
 console.log('Cobertura de filtros y sesiones por tema hasta 1400 ELO: OK');
+
+// El entrenamiento integrado conserva el progreso y exige cálculo en modo reto.
+{
+ let s=freshAia();s=transitionAia(s,'settings',{revision:s.revision,intensity:'challenge',seed:2});
+ const p=activeProfile(s),plan=buildPlan(p,now);
+ assert.ok(plan.ids.length>0);for(const id of plan.ids){const e=exercise(id);assert.ok(e.fen&&e.line&&e.line.length>=3);}
+ const fen='6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1';
+ s=transitionAia(s,'save_error',{revision:s.revision,fen,line:'Re8#',explanation:'Mate de última fila.'});
+ assert.equal(activeProfile(s).personal?.length,1);
+ s=transitionAia(s,'save_error',{revision:s.revision,fen,line:'Re8#'});assert.equal(activeProfile(s).personal?.length,1);
+ assert.throws(()=>transitionAia(s,'save_error',{revision:s.revision,fen,line:'e4'}));
+ const id=activeProfile(s).personal![0].id;
+ s=transitionAia(s,'start',{revision:s.revision,exerciseId:id});assert.equal(aiaView(s).currentExercise?.id,id);
+ const v=aiaView(s);s=transitionAia(s,'answer',{revision:s.revision,sessionId:v.profiles[0].session!.id,exerciseId:id,step:0,move:'Re8#'},now);
+ assert.equal(activeProfile(s).attempts.at(-1)?.success,true);
+ console.log('Integración: retos multijugada y errores personales con repaso OK');
+}
+{
+ const added=CATALOG.filter(e=>e.sourceUrl&&e.puzzleRating!>=1200);
+ assert.ok(added.length>=600);assert.ok(added.every(e=>(e.line?.length||0)>=3));
+ const school=CATALOG.filter(e=>e.id.startsWith('trainer-opening-'));
+ assert.ok(school.length>=100);
+ assert.ok(school.some(e=>e.id.includes('-3-0'))&&school.some(e=>e.id.includes('-3-1')));
+ console.log('Escuela de aperturas: '+school.length+' prácticas legales; catálogo total '+CATALOG.length);
+}
+// Correspondencia exacta con los doce cuadernos del libro.
+{
+ const courses=(await import('../lib/trainer-openings.json')).default;
+ assert.equal(courses.length,12);for(const course of courses){for(const line of course.lines){const c=new Chess();for(const m of line.moves)c.move(m.san);}assert.ok(CATALOG.some(e=>e.id.startsWith('trainer-opening-'+course.id+'-')),course.name);}
+ assert.ok(courses[8].name.includes('Eslava'));assert.ok(courses[11].name.includes('poco frecuentes'));
+}

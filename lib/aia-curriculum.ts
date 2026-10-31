@@ -1,10 +1,12 @@
+import trainerOpenings from './trainer-openings.json';
+import expanded from './lichess-expanded.json';
 import {Chess} from 'chess.js';
 import {completeFoundations} from './aia-foundations';
 import {SUPPLEMENT_SEEDS} from './aia-supplement-seeds';
 export const TRACKS={opening:'Aperturas',tactics:'Táctica y cálculo',strategy:'Estrategia',endgame:'Finales'} as const;
 export type Track=keyof typeof TRACKS;
 export const LEVELS=[['Fundamentos','Hasta 600'],['Jugar con seguridad','600–1000'],['Construir un plan','1000–1400'],['Coordinar las piezas','1400–1800'],['Profundizar','1800–2000'],['Técnica avanzada','2000–2200'],['Perfeccionamiento','2200+']];
-export type Exercise={id:string;level:number;track:Track;title:string;concept:string;task:string;explanation:string;hints:string[];fen?:string;line?:string[];accepted?:string[];options?:string[];answer?:number;wrong?:Record<string,string>;topics?:string[]};
+export type Exercise={stepNotes?:string[];sourceUrl?:string;puzzleRating?:number;id:string;level:number;track:Track;title:string;concept:string;task:string;explanation:string;hints:string[];fen?:string;line?:string[];accepted?:string[];options?:string[];answer?:number;wrong?:Record<string,string>;topics?:string[]};
 export const CATALOG:Exercise[]=[];
 function position(setup:string[]|string){const c=typeof setup==='string'?new Chess(setup):new Chess();if(Array.isArray(setup))setup.forEach(m=>c.move(m));return c.fen();}
 function move(level:number,track:Track,title:string,concept:string,setup:string[]|string,task:string,line:string[],explanation:string,hints:string[],accepted?:string[],wrong?:Record<string,string>){CATALOG.push({id:`${track}-${level}-board`,level,track,title,concept,fen:position(setup),task,line,explanation,hints,accepted,wrong});}
@@ -152,7 +154,7 @@ function addLicensedPuzzle(level:number,track:Track,row:readonly [string,string,
   :'Encuentra la decisión práctica adecuada en esta posición. Compara candidatos y la mejor defensa rival.';
  const preface=track==='tactics'?'Táctica y cálculo':track==='endgame'?'Técnica de finales':'Decisiones estratégicas';
  CATALOG.push({id:'lichess-'+track+'-'+level+'-'+puzzleId,level,track,
-  title:preface+' · '+subject+' · '+puzzleId,
+  title:preface+' · '+subject+' · '+puzzleId,sourceUrl:'https://lichess.org/training/'+puzzleId,puzzleRating:rating,
   concept:'Posición real de entrenamiento de Lichess (CC0). Tema de trabajo: '+subject+'. El nivel del puzzle ('+rating+') no representa tu ELO.',
   task,fen:initial,line,
   explanation:'La continuación preparada de este problema utiliza '+subject+'. Revisa el orden de jugadas y los recursos rivales. Es una solución de entrenamiento, no un análisis nuevo de Stockfish.',
@@ -242,6 +244,24 @@ for(let level=0;level<=2;level++){
 }
 
 completeFoundations(CATALOG);
+// Complemento de cálculo: conservar las secuencias largas del conjunto CC0,
+// sin inventar dificultad ni truncarlas a una sola jugada.
+for(const area of ['tactics','strategy','endgame'] as const)for(let level=1;level<=2;level++)for(const row of SUPPLEMENT_SEEDS[area][level]){
+ const previous=CATALOG.length;try{addLicensedPuzzle(level,area,row);}catch{CATALOG.splice(previous);}
+}
+// Un mismo identificador no debe aparecer dos veces en la selección adaptativa.
+{const seen=new Set<string>();for(let i=0;i<CATALOG.length;){if(seen.has(CATALOG[i].id))CATALOG.splice(i,1);else{seen.add(CATALOG[i].id);i++;}}}
+
+for(const row of expanded){try{addLicensedPuzzle(Number(row[0]),row[1] as Track,[String(row[2]),String(row[3]),String(row[4]),Number(row[5]),String(row[6])]);}catch{/* Descartar datos que no superen la validación legal. */}}
+// Secuencias progresivas y planes de Entrenador: ambos bandos y continuidad.
+for(const course of trainerOpenings)for(const variation of course.lines){
+ const all=variation.moves;try{const check=new Chess();all.forEach(m=>check.move(m.san));}catch{continue;}
+ for(const [phase,start,size] of [[1,0,7],[2,6,7],[3,12,9]])for(const side of [0,1]){
+  const offset=start+side;if(offset>=all.length)continue;const c=new Chess();all.slice(0,offset).forEach(m=>c.move(m.san));let steps=all.slice(offset,offset+size);if(steps.length%2===0)steps=steps.slice(0,-1);if(steps.length<3)continue;
+  const names=['','Secuencia básica','Desarrollo y plan','Hacia el medio juego'];
+  CATALOG.push({id:`trainer-opening-${course.id}-${variation.id}-${phase}-${side}`,track:'opening',level:phase===1?1:2,topics:[course.id],title:course.name+' · '+names[phase]+' · '+(side?'Negras':'Blancas'),concept:course.summary+' Plan: '+course.plan.join(' '),task:phase===1?'Completa la secuencia básica de este repertorio. Hay otras aperturas legales; aquí entrenas esta línea.':'Continúa desde esta posición, sin reiniciar la apertura. Calcula la respuesta rival y completa el desarrollo.',fen:c.fen(),line:steps.map(m=>m.san),stepNotes:steps.map(m=>m.explanation),explanation:steps.map(m=>m.explanation).join(' '),hints:['Revisa qué desarrolla, ataca o deja de defender la última jugada.',course.plan.join(' ')]});
+ }
+}
 CATALOG.sort((a,b)=>a.level-b.level||Object.keys(TRACKS).indexOf(a.track)-Object.keys(TRACKS).indexOf(b.track));
 export const SOURCES=[{title:'Lichess · Base de problemas CC0',url:'https://database.lichess.org/#puzzles'},{title:'Lichess · Catálogo de aperturas CC0',url:'https://github.com/lichess-org/chess-openings'},{title:'Chess.com · Planes de estudio por nivel',url:'https://www.chess.com/article/view/study-plan-directory'},{title:'Chess.com · Estrategia intermedia',url:'https://www.chess.com/article/view/study-plan-for-intermediate-players-strategy2'},{title:'ECU · Currículo y ejercicios progresivos',url:'https://edu.europechess.org/cie-package/'},{title:'Chess.com · Lecciones interactivas',url:'https://support.chess.com/en/articles/8609703-how-do-lessons-work-on-chess-com'}];
 export function exercise(id:string){const e=CATALOG.find(x=>x.id===id);if(!e)throw Error('Ejercicio no encontrado');return e;}

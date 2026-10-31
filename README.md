@@ -77,3 +77,11 @@ Sites guarda el progreso por usuario en R2 mediante escrituras condicionales; Gi
 `npm test` regenera el widget autocontenido antes de comprobar MCP y valida también el catálogo y el motor adaptativo. Para regenerarlo sin pruebas: `node scripts/prepare-widget.mjs`. No editar los archivos generados a mano.
 
 Referencias de la ruta: [planes por nivel de Chess.com](https://www.chess.com/article/view/study-plan-directory), [estrategia intermedia](https://www.chess.com/article/view/study-plan-for-intermediate-players-strategy2), [ECU CiE](https://edu.europechess.org/cie-package/) y [lecciones interactivas](https://support.chess.com/en/articles/8609703-how-do-lessons-work-on-chess-com). Contenidos y reglas adaptativas originales.
+
+## Entrenamiento integrado · v1.8
+
+AIA reúne sesión diaria, comprobación por áreas, escuela de aperturas y ejercicios personales procedentes de la revisión de partidas. El selector «Reto» prioriza posiciones de varias jugadas y hasta una etapa adicional; no certifica un ELO. Las nuevas aperturas trasladan los cursos de Entrenador, con prácticas progresivas de ambos bandos y explicaciones de los movimientos rivales. La escuela conserva el orden de los doce cuadernos: Italiana, Española, Escocesa, Contra Siciliana, Contra Francesa, Contra Caro-Kann, Caro-Kann, Escandinava, Eslava, Gambito de Dama Rehusado, Contra Londres y Aperturas poco frecuentes. Las primeras fases enseñan el repertorio; las posteriores comienzan desde posiciones más avanzadas.
+
+Se incorporan 600 problemas adicionales de la base oficial Lichess CC0, con rating del problema 1200–2399, al menos seis medias jugadas en el registro original y filtros de popularidad/uso. El archivo `lib/lichess-expanded.json` conserva identificador, FEN original, movimientos UCI, rating y temas. La posición de entrenamiento se obtiene después de aplicar la jugada inicial del rival. Todas las secuencias se validan con chess.js; su legalidad no equivale a demostrar que no existe ninguna otra solución.
+
+En «Revisar partida», «Guardar como ejercicio AIA» permite practicar una alternativa preparada con Stockfish dentro del perfil activo. Los resultados y repasos usan las mismas reglas AIA. El entrenador anterior se conserva: su historial no se migra automáticamente entre orígenes; sus partidas se trasladan mediante PGN. No se han retirado sitios ni borrado datos.
