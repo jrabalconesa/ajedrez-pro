@@ -11,7 +11,7 @@
     "app/layout.tsx": "9acfa935b31ca65018fa18011431dbc60e80da4965ab666ad861a1cc271cd526",
     "app/aia.tsx": "759394e6bc85eb181dee10b09e99c49181f8c38a3a6a99422d722bd8eb8a7f5b",
     "app/data-transfer.tsx": "f1b95682e38950229246c8036c8a647a79547c81b47cb79eb080ab6bb0cafb45",
-    "app/chess-app.tsx": "3753e60e5f19ee6f06a0142c0e636690c3338726a185a404a1f6aee61551d4f6",
+    "app/chess-app.tsx": "d103953e9dce4b15120b4734d1756afe0b370d88f2c33efa5f239ab269401aaa",
     "app/mcp/route.ts": "f478bc906d3917024077feb8edba0c5df83f028cb4180a05511496bb936092dd",
     "app/api/game/route.ts": "27dd62bba2e2d807dc84974adf88d180a2831ef60675fc43ad32a76cda482cc3",
     "lib/chess-state.ts": "0bbe89e35e23bc55d4cf9309918ae18f3798c827653a60727773896f0e6f3916",
@@ -39,8 +39,9 @@
     "lib/aia-curriculum.ts": "25649d09d71f52de9b900b9f1f7e05e2a2ecf3d7fd0afb10cabf746a3a10840d",
     "lib/game-id.ts": "b4a04b651000f75d183782b79ebbfd940f47c2c35b5bc5ec9f7d3ca98c4f7433",
     "lib/engine-settings.ts": "8cd885c7a684ea972d3f0484665c71407a47321d23dbc957de5e0f9ff357dcd4",
-    "lib/generated/widget-html.ts": "31389bc89abf15ee562a7d78c526d4f7cd0a27097c7c387d4f4ad86ed34f5da5",
+    "lib/generated/widget-html.ts": "9e7e43c92d653a326f5761bfc60724df3f3a75bbdc87201871dbcfd6d706d551",
     "lib/generated/engine-source.ts": "fdc4bb8f09e38367e14f95cc88d9dcf08c97d14ef2d278812f2dd853c0dd5932"
   },
-  "policy": "three-way: compare both against these hashes; transfer one-sided changes; stop on conflicting edits; preserve platform adapters and Site audience; never sync user data automatically"
+  "policy": "three-way: compare both against these hashes; transfer one-sided changes; stop on conflicting edits; preserve platform adapters and Site audience; never sync user data automatically",
+  "generated_policy": "Regenerate widget with node scripts/prepare-widget.mjs from matching app/lib source before validating/deploying. Do not propagate an older generated bundle over newer source."
 }
