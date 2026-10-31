@@ -1,0 +1,2 @@
+import {build} from 'esbuild';import fs from 'node:fs';import {execFileSync} from 'node:child_process';import os from 'node:os';import path from 'node:path';
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chess-backup-')),file=path.join(dir,'test.mjs');try{await build({entryPoints:['tests/backup.test.ts'],outfile:file,bundle:true,platform:'node',format:'esm'});execFileSync(process.execPath,[file],{stdio:'inherit'});}finally{fs.rmSync(dir,{recursive:true,force:true});}

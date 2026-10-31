@@ -1,0 +1,21 @@
+import {Chess} from 'chess.js';
+import {freshAia,type AiaStore} from './aia';
+import type {Game} from './chess-state';
+export type ChessBackup={app:'ajedrez-pro';version:1;exportedAt:number;games:Game[];aia:AiaStore};
+const fail=():never=>{throw Error('Copia de Ajedrez PRO no válida. No se ha importado nada.');};
+function safe(v:any,d=0):void{if(d>35)fail();if(v===null||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v))return;if(typeof v==='string'&&v.length<100000)return;if(Array.isArray(v)&&v.length<=20000){v.forEach(x=>safe(x,d+1));return;}if(v&&typeof v==='object'&&Object.keys(v).length<20000){for(const[k,x]of Object.entries(v)){if(['__proto__','prototype','constructor'].includes(k))fail();safe(x,d+1);}return;}fail();}
+export function validateChessBackup(b:any):ChessBackup{
+ if(!b||b.app!=='ajedrez-pro'||b.version!==1||!Array.isArray(b.games)||b.games.length>500||JSON.stringify(b).length>5e6)fail();safe(b);
+ const ids=new Set();for(const g of b.games){if(!g||typeof g.id!=='string'||!/^[-a-zA-Z0-9]{1,80}$/.test(g.id)||ids.has(g.id)||typeof g.title!=='string'||g.title.length>100||!Array.isArray(g.history)||g.history.length>2000||!Number.isInteger(g.cursor)||g.cursor<0||g.cursor>g.history.length||!Number.isInteger(g.difficulty)||g.difficulty<0||g.difficulty>20||!['play','study'].includes(g.mode)||!Number.isInteger(g.revision)||!Number.isFinite(Date.parse(g.updatedAt))||g.playerColor&&!['w','b'].includes(g.playerColor))fail();ids.add(g.id);const c=new Chess(g.initialFen);for(const m of g.history){if(typeof m!=='string'||m.length>15)fail();c.move(m);}}
+ const s=b.aia;if(!s||!Number.isInteger(s.revision)||!Array.isArray(s.profiles)||!s.profiles.length||s.profiles.length>50||!s.profiles.some((p:any)=>p.id===s.active))fail();const profileIds=new Set();
+ for(const p of s.profiles){if(!p||typeof p.id!=='string'||!/^[-a-zA-Z0-9]{1,80}$/.test(p.id)||profileIds.has(p.id)||typeof p.name!=='string'||p.name.length>80||!Number.isInteger(p.seed)||p.seed<1||p.seed>6||!Number.isFinite(p.minutes)||!['auto','opening','tactics','strategy','endgame'].includes(p.focus)||!Array.isArray(p.attempts)||!Array.isArray(p.reviews)||!Array.isArray(p.completed)||p.session!==null&&(!p.session||!Array.isArray(p.session.ids)||!Array.isArray(p.session.path)||!Array.isArray(p.session.results)||!Number.isInteger(p.session.index)))fail();profileIds.add(p.id);for(const a of p.attempts)if(!a||typeof a.id!=='string'||typeof a.exerciseId!=='string'||!Number.isFinite(a.date)||!Number.isInteger(a.level)||typeof a.success!=='boolean'||typeof a.assisted!=='boolean')fail();}
+ return b;
+}
+export function makeChessBackup(games:Game[],aia:AiaStore){return validateChessBackup({app:'ajedrez-pro',version:1,exportedAt:Date.now(),games,aia});}
+function union(a:any[],b:any[]){const map=new Map();for(const x of [...b,...a])map.set(x.id||x.exerciseId||JSON.stringify(x),x);return [...map.values()];}
+export function mergeChessBackup(games:Record<string,Game>,aia:AiaStore|undefined,b:ChessBackup){
+ validateChessBackup(b);const out={...games};let added=0;for(const g of b.games)if(!out[g.id]){out[g.id]=g;added++;}
+ const current=aia||freshAia(),profiles=[...current.profiles];
+ for(const p of b.aia.profiles){const index=profiles.findIndex(x=>x.id===p.id);if(index<0)profiles.push(p);else{const old=profiles[index];profiles[index]={...p,...old,attempts:union(old.attempts,p.attempts),reviews:union(old.reviews,p.reviews),completed:union(old.completed,p.completed),session:old.session||p.session};}}
+ return {games:out,aia:{...current,profiles,revision:Math.max(current.revision,b.aia.revision)+1},added};
+}

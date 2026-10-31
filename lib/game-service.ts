@@ -1,3 +1,4 @@
+import {makeChessBackup,mergeChessBackup,validateChessBackup} from './backup';
 import {attachTraining,freshTraining} from './training';
 import {freshAia,transitionAia,aiaView,type AiaStore} from './aia';
 import {transitionGame} from './game-operations';
@@ -6,6 +7,16 @@ import { fresh, view, mutate, board, fromPgn, type Game } from './chess-state';
 async function prefix(user:string){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(user));return 'chess/'+Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')+'/';}
 function bucket(){return (env as any).BUCKET as R2Bucket;}
 export async function execute(user:string,action:string,a:any={}){const root=await prefix(user);const b=bucket();
+ if(action==='backup_export'||action==='backup_import'){
+  const games:Record<string,Game>={};let cursor:string|undefined;
+  do{const page=await b.list({prefix:root+'games/',limit:100,cursor});for(const item of page.objects){if(Object.keys(games).length>=500)throw Error('La copia admite hasta 500 partidas. Exporta las demás como PGN.');const obj=await b.get(item.key);if(obj){const game=await obj.json<Game>();games[game.id]=game;}}cursor=page.truncated?page.cursor:undefined;}while(cursor);
+  const stored=await b.get(root+'aia.json'),aia=stored?await stored.json<AiaStore>():freshAia();
+  if(action==='backup_export')return makeChessBackup(Object.values(games),aia);
+  const merged=mergeChessBackup(games,aia,validateChessBackup(a.backup));
+  const saved=await b.put(root+'aia.json',JSON.stringify(merged.aia),{onlyIf:stored?{etagMatches:stored.etag}:{etagDoesNotMatch:'*'}});if(!saved)throw Error('AIA ha cambiado en otra ventana. Reintenta la importación.');
+  for(const g of Object.values(merged.games))if(!games[g.id])await b.put(root+'games/'+g.id+'.json',JSON.stringify(g),{onlyIf:{etagDoesNotMatch:'*'},customMetadata:{title:g.title}});
+  return {ok:true,notice:`Copia combinada: ${merged.added} partidas añadidas; perfiles e historial AIA combinados. Recarga para verlos.`};
+ }
  if(action==='aia'){
  const key=root+'aia.json',obj=await b.get(key);const state=obj?await obj.json<AiaStore>():freshAia();
  let args=a;if(a.op==='training_result'){if(typeof a.gameId!=='string'||!/^[-a-zA-Z0-9]{1,80}$/.test(a.gameId))throw Error('Identificador no válido');const stored=await b.get(root+'games/'+a.gameId+'.json');if(!stored)throw Error('Partida no encontrada');args={...a,game:await stored.json()};}const next=transitionAia(state,a.op||'get',args);
