@@ -1,29 +1,28 @@
 {
   "id": "./",
-  "name": "Ajedrez PRO - Aprende, juega y mejora",
+  "name": "Ajedrez PRO",
   "short_name": "Ajedrez PRO",
-  "description": "Aprende, juega y mejora con Stockfish.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#064B32",
+  "background_color": "#ffffff",
   "theme_color": "#064B32",
   "icons": [
     {
-      "src": "./icon-192-v6.png",
+      "src": "https://jrabalconesa.github.io/ajedrez-pro/app-icons/logo-192-v20261031.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-512-v6.png",
+      "src": "https://jrabalconesa.github.io/ajedrez-pro/app-icons/logo-512-v20261031.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-maskable-512-v6.png",
+      "src": "https://jrabalconesa.github.io/ajedrez-pro/app-icons/logo-maskable-512-v20261031.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
