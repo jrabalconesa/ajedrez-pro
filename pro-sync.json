@@ -3,12 +3,11 @@
   "app": "ajedrez-pro",
   "repository": "jrabalconesa/ajedrez-pro",
   "site_project_id": "appgprj_6ad67ff6c4ac81919eea69b821e4b153",
-  "updated": "2026-10-31",
+  "updated": "2026-11-09",
   "files": {
     "app/page.tsx": "bdbe93e520ffaeb77c4d198dd49aeb4668b642ad8dd99d36ed7233d379fcacc2",
     "app/chatgpt-auth.ts": "4265a2e7c2dcb3a6f4b7026f762bf5b6e4caec76cc13c0a45987ee9a9f2e42cc",
     "app/globals.css": "6b54ab081191f591cc6cb3ec855dfbe32e33869dd73ae7a2ef848799366dfc40",
-    "app/layout.tsx": "9acfa935b31ca65018fa18011431dbc60e80da4965ab666ad861a1cc271cd526",
     "app/aia.tsx": "7d272f8addec4cbc4c4ac20a0d0bfc3e12bb3254594efd09861a432d8eeff370",
     "app/data-transfer.tsx": "f1b95682e38950229246c8036c8a647a79547c81b47cb79eb080ab6bb0cafb45",
     "app/chess-app.tsx": "b1e54e1677b2ee171fc1288fd0c77642129279e98472e1609ebd6139f808e385",
@@ -47,5 +46,12 @@
     "tests/aia.test.ts": "6dc95a88466d320c74bf4f710a154547391a17e274820368aac79368f20e5492"
   },
   "policy": "three-way: compare both against these hashes; transfer one-sided changes; stop on conflicting edits; preserve platform adapters and Site audience; never sync user data automatically",
-  "generated_policy": "Regenerate widget with node scripts/prepare-widget.mjs from matching app/lib source before validating/deploying. Do not propagate an older generated bundle over newer source."
+  "generated_policy": "Regenerate widget with node scripts/prepare-widget.mjs from matching app/lib source before validating/deploying. Do not propagate an older generated bundle over newer source.",
+  "platform_files": {
+    "app/layout.tsx": {
+      "site_sha256": "6ea75d2b4d81effb7bf54aa2d7a9a34ca79ab6494fdb25d16c6295909f7b64a1",
+      "github_sha256": "06c4e6cf0a66e786790c0bc4224eda1eefe4bcc4bdb3668bab1604a2c27c0bd6",
+      "policy": "Platform-specific URL adapter. Preserve the Site-relative and GitHub Pages absolute/public form; do not copy either version verbatim over the other."
+    }
+  }
 }
